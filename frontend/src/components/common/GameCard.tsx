@@ -37,21 +37,61 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
   };
 
   const isComingSoon = game.status === 'coming-soon';
-  const CardWrapper = isComingSoon ? 'div' : Link;
+  
+  if (isComingSoon) {
+    return (
+      <div className={`game-card coming-soon`}>
+        <div className="game-card-icon">{game.icon}</div>
+        <h3 className="game-card-title">{game.name}</h3>
+        <p className="game-card-description">{game.description}</p>
+        
+        <div className="coming-soon-badge">
+          <span>Coming Soon</span>
+        </div>
+        
+        <div className="game-card-meta">
+          <span className={`game-type ${game.type}`}>
+            {game.type === 'single' ? '1P' : `${game.minPlayers}-${game.maxPlayers}P`}
+          </span>
+          <span className={`game-difficulty ${game.difficulty}`}>
+            {game.difficulty}
+          </span>
+        </div>
+        
+        {votes && (
+          <div className="voting-section">
+            <div className="vote-count">
+              <span className="vote-number">{votes.votes}</span>
+              <span className="vote-label">votes</span>
+            </div>
+            <button 
+              className={`vote-button ${votes.userVoted ? 'voted' : ''}`}
+              onClick={handleVote}
+            >
+              {votes.userVoted ? 'Remove Vote' : 'Vote'}
+            </button>
+          </div>
+        )}
+        
+        <div className="game-card-tags">
+          {game.tags.map((tag) => (
+            <span key={tag} className="game-tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <CardWrapper 
-      {...(isComingSoon ? {} : { to: `/game/${game.id}` })}
-      className={`game-card ${isComingSoon ? 'coming-soon' : ''}`}
+    <Link 
+      to={`/game/${game.id}`}
+      className="game-card"
     >
       <div className="game-card-icon">{game.icon}</div>
       <h3 className="game-card-title">{game.name}</h3>
       <p className="game-card-description">{game.description}</p>
-      
-      {isComingSoon && (
-        <div className="coming-soon-badge">
-          <span>Coming Soon</span>
-        </div>
-      )}
       
       <div className="game-card-meta">
         <span className={`game-type ${game.type}`}>
@@ -62,32 +102,17 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
         </span>
       </div>
       
-      {!isComingSoon && highScore !== undefined && (
+      {highScore !== undefined && (
         <div className="game-card-score">
           <span>Best: {highScore.toLocaleString()}</span>
         </div>
       )}
       
-      {!isComingSoon && leaderboardEntry && (
+      {leaderboardEntry && (
         <div className="game-card-record">
           <span className="record-label">Record:</span>
           <span className="record-score">{leaderboardEntry.score.toLocaleString()}</span>
           <span className="record-holder">by {leaderboardEntry.playerName}</span>
-        </div>
-      )}
-      
-      {isComingSoon && votes && (
-        <div className="voting-section">
-          <div className="vote-count">
-            <span className="vote-number">{votes.votes}</span>
-            <span className="vote-label">votes</span>
-          </div>
-          <button 
-            className={`vote-button ${votes.userVoted ? 'voted' : ''}`}
-            onClick={handleVote}
-          >
-            {votes.userVoted ? 'Remove Vote' : 'Vote'}
-          </button>
         </div>
       )}
       
@@ -98,6 +123,6 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
           </span>
         ))}
       </div>
-    </CardWrapper>
+    </Link>
   );
 };

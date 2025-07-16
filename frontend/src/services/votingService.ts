@@ -1,5 +1,3 @@
-import apiClient from '../utils/apiClient';
-
 export interface GameVotes {
   gameId: string;
   votes: number;
@@ -11,11 +9,37 @@ export interface VoteResponse {
   votes: number;
 }
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 
+  (import.meta.env.MODE === 'production' 
+    ? 'https://toy-chest-backend.onrender.com' 
+    : 'http://localhost:3001');
+
 class VotingService {
+  private async fetchWithErrorHandling(url: string, options?: RequestInit): Promise<Response> {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+        ...options,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
   async getVotes(): Promise<GameVotes[]> {
     try {
-      const response = await apiClient.get<GameVotes[]>('/votes');
-      return response.data;
+      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/votes`);
+      return response.json();
     } catch (error) {
       console.error('Failed to fetch votes:', error);
       return [];
@@ -24,8 +48,10 @@ class VotingService {
 
   async voteForGame(gameId: string): Promise<VoteResponse | null> {
     try {
-      const response = await apiClient.post<VoteResponse>(`/votes/${gameId}`);
-      return response.data;
+      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/votes/${gameId}`, {
+        method: 'POST',
+      });
+      return response.json();
     } catch (error) {
       console.error('Failed to vote for game:', error);
       return null;
@@ -34,8 +60,10 @@ class VotingService {
 
   async removeVote(gameId: string): Promise<VoteResponse | null> {
     try {
-      const response = await apiClient.delete<VoteResponse>(`/votes/${gameId}`);
-      return response.data;
+      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/votes/${gameId}`, {
+        method: 'DELETE',
+      });
+      return response.json();
     } catch (error) {
       console.error('Failed to remove vote:', error);
       return null;

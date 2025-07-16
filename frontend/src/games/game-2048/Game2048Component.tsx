@@ -20,7 +20,6 @@ export const Game2048Component: React.FC = () => {
     isHighScore: boolean; 
     hasWon: boolean 
   } | null>(null);
-  const [showLeaderboard] = useState(true);
   const updateGameScore = useStore((state) => state.updateGameScore);
   const gameScores = useStore((state) => state.gameScores);
   
