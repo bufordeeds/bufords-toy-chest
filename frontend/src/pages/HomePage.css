@@ -108,6 +108,47 @@
   color: var(--color-primary-dark);
 }
 
+.daily-section {
+  margin-bottom: var(--spacing-3xl);
+}
+
+.daily-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.daily-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  text-align: center;
+  transition: all var(--transition-base);
+}
+
+.daily-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.daily-card.coming-soon {
+  opacity: 0.7;
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-muted) 100%);
+}
+
+.daily-card h3 {
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+}
+
+.daily-card p {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .games-grid {
     grid-template-columns: 1fr;

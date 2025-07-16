@@ -5,9 +5,6 @@ import { io, Socket } from 'socket.io-client';
 
 export class TicTacToe extends BaseGame implements MultiplayerGame {
   private static readonly BOARD_SIZE = 3;
-  private static readonly MAX_UNDOS = 3;
-  
-  private undosUsed: number = 0;
   private socket: Socket | null = null;
   private roomCode: string | null = null;
   private playerId: string | null = null;
@@ -28,12 +25,10 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       winningLine: null,
       moveHistory: [],
       scores: { X: 0, O: 0, draws: 0 },
-      canUndo: false,
       gameCount: 0,
     };
     
     this.score = 0;
-    this.undosUsed = 0;
     this.isInitialized = true;
   }
   
@@ -72,7 +67,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       ...state,
       board: newBoard,
       moveHistory: [...state.moveHistory, move],
-      canUndo: this.undosUsed < TicTacToe.MAX_UNDOS && state.moveHistory.length >= 0,
     };
     
     // Check for win or draw
@@ -97,7 +91,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       gameStatus: 'won',
       winner,
       winningLine: winCondition.positions.flat(),
-      canUndo: false,
     };
     
     // Update scores
@@ -120,7 +113,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       ...state,
       gameStatus: 'draw',
       winner: null,
-      canUndo: false,
     };
     
     // Update scores
@@ -195,47 +187,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
     return null;
   }
   
-  public undoLastMove(): boolean {
-    const state = this.gameState as TicTacToeState;
-    
-    if (!state.canUndo || state.moveHistory.length === 0 || this.undosUsed >= TicTacToe.MAX_UNDOS) {
-      return false;
-    }
-    
-    // Remove last move
-    const newMoveHistory = state.moveHistory.slice(0, -1);
-    const newBoard = this.createEmptyBoard();
-    
-    // Replay all moves except the last one
-    newMoveHistory.forEach(move => {
-      newBoard[move.row][move.col] = move.player;
-    });
-    
-    // Determine current player (opposite of last move's player)
-    const lastMove = state.moveHistory[state.moveHistory.length - 1];
-    const currentPlayer = lastMove.player === 'X' ? 'O' : 'X';
-    
-    this.undosUsed++;
-    
-    this.gameState = {
-      ...state,
-      board: newBoard,
-      currentPlayer,
-      gameStatus: 'playing',
-      winner: null,
-      winningLine: null,
-      moveHistory: newMoveHistory,
-      canUndo: this.undosUsed < TicTacToe.MAX_UNDOS && newMoveHistory.length > 0,
-    };
-    
-    this.onStateChange?.(this.gameState);
-    return true;
-  }
-  
-  public getUndosRemaining(): number {
-    return Math.max(0, TicTacToe.MAX_UNDOS - this.undosUsed);
-  }
-  
   public newGame(): void {
     const state = this.gameState as TicTacToeState;
     
@@ -247,16 +198,13 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       winner: null,
       winningLine: null,
       moveHistory: [],
-      canUndo: false,
     };
     
-    this.undosUsed = 0;
     this.start();
     this.onStateChange?.(this.gameState);
   }
   
   reset(): void {
-    this.undosUsed = 0;
     super.reset();
   }
   

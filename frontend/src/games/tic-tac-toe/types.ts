@@ -23,7 +23,6 @@ export interface TicTacToeState {
   winningLine: number[] | null;
   moveHistory: Move[];
   scores: PlayerScores;
-  canUndo: boolean;
   gameCount: number;
 }
 

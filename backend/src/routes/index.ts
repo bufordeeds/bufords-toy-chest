@@ -4,22 +4,22 @@ import { gameRoutes } from './games.js';
 import { leaderboardRoutes } from './leaderboard.js';
 
 export function setupRoutes(app: Express): void {
-  // API routes
-  app.use('/api/voting', votingRoutes);
-  app.use('/api/games', gameRoutes);
-  app.use('/api/leaderboard', leaderboardRoutes);
-  
-  // API info endpoint
-  app.get('/api', (_, res) => {
-    res.json({
-      name: "Buford's Toy Chest API",
-      version: '1.0.0',
-      endpoints: {
-        voting: '/api/voting',
-        games: '/api/games',
-        leaderboard: '/api/leaderboard',
-        health: '/health'
-      }
-    });
-  });
+	// API routes
+	app.use('/api/voting', votingRoutes);
+	app.use('/api/games', gameRoutes);
+	app.use('/api/leaderboard', leaderboardRoutes);
+
+	// API info endpoint
+	app.get('/api', (_, res) => {
+		res.json({
+			name: 'Daily Games API',
+			version: '1.0.0',
+			endpoints: {
+				voting: '/api/voting',
+				games: '/api/games',
+				leaderboard: '/api/leaderboard',
+				health: '/health'
+			}
+		});
+	});
 }

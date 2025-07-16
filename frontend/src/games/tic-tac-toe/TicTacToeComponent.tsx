@@ -82,11 +82,6 @@ export const TicTacToeComponent: React.FC = () => {
     }
   }, []);
   
-  const handleUndo = useCallback(() => {
-    if (gameRef.current) {
-      gameRef.current.undoLastMove();
-    }
-  }, []);
   
   const handleCreateRoom = useCallback(async () => {
     if (!gameRef.current || !playerName.trim()) return;
@@ -379,13 +374,6 @@ export const TicTacToeComponent: React.FC = () => {
                 New Game
               </button>
               
-              <button
-                className="tic-tac-toe-button tic-tac-toe-button--secondary"
-                onClick={handleUndo}
-                disabled={!gameState.canUndo}
-              >
-                Undo ({gameRef.current?.getUndosRemaining() || 0}/3)
-              </button>
             </>
           )}
           
