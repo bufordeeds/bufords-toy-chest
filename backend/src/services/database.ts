@@ -40,11 +40,16 @@ export interface LeaderboardEntry {
 
 export async function initDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
+    console.log('Initializing database...');
+    
     db = new sqlite3.Database('./game_data.db', (err) => {
       if (err) {
+        console.error('Failed to connect to database:', err);
         reject(err);
         return;
       }
+      
+      console.log('Database connection established');
       
       // Create tables
       const createTables = [
@@ -86,14 +91,22 @@ export async function initDatabase(): Promise<void> {
       ];
       
       let completed = 0;
-      createTables.forEach((sql) => {
+      let hasError = false;
+      
+      createTables.forEach((sql, index) => {
         db.run(sql, (err) => {
-          if (err) {
+          if (err && !hasError) {
+            console.error(`Failed to create table ${index + 1}:`, err);
+            hasError = true;
             reject(err);
             return;
           }
+          
           completed++;
-          if (completed === createTables.length) {
+          console.log(`Created table ${completed}/${createTables.length}`);
+          
+          if (completed === createTables.length && !hasError) {
+            console.log('All database tables created successfully');
             resolve();
           }
         });
