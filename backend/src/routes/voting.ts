@@ -5,7 +5,7 @@ import { dbRun, dbGet, dbAll } from '../services/database.js';
 const router = express.Router();
 
 // Get all nominations
-router.get('/nominations', async (req, res) => {
+router.get('/nominations', async (_, res) => {
   try {
     const nominations = await dbAll('SELECT * FROM nominations ORDER BY votes DESC, submittedAt DESC');
     res.json(nominations);
@@ -31,9 +31,9 @@ router.post('/nominations', async (req, res) => {
       [id, name, description, category, difficulty, estimatedComplexity, submittedAt]
     );
     
-    res.json({ id, message: 'Nomination submitted successfully' });
+    return res.json({ id, message: 'Nomination submitted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to submit nomination' });
+    return res.status(500).json({ error: 'Failed to submit nomination' });
   }
 });
 
@@ -74,14 +74,14 @@ router.post('/nominations/:id/vote', async (req, res) => {
       [id]
     );
     
-    res.json({ message: 'Vote recorded successfully' });
+    return res.json({ message: 'Vote recorded successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to record vote' });
+    return res.status(500).json({ error: 'Failed to record vote' });
   }
 });
 
 // Get voting statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (_, res) => {
   try {
     const totalNominations = await dbGet('SELECT COUNT(*) as count FROM nominations');
     const totalVotes = await dbGet('SELECT COUNT(*) as count FROM votes');

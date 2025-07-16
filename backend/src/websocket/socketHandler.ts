@@ -1,6 +1,5 @@
 import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
-import { dbRun, dbGet, dbAll } from '../services/database.js';
 
 interface Player {
   id: string;
@@ -224,7 +223,7 @@ function processGameAction(gameId: string, currentState: any, action: any, playe
   }
 }
 
-function processTicTacToeAction(state: any, action: any, playerId: string): any {
+function processTicTacToeAction(state: any, action: any, _: string): any {
   if (action.type === 'make-move') {
     const newState = { ...state };
     const { position } = action;
@@ -255,7 +254,7 @@ function processTicTacToeAction(state: any, action: any, playerId: string): any 
   return state;
 }
 
-function processConnect4Action(state: any, action: any, playerId: string): any {
+function processConnect4Action(state: any, _: any, __: string): any {
   // Connect 4 logic would go here
   return state;
 }

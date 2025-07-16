@@ -264,7 +264,8 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
   async joinRoom(roomCode: string, playerName?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
-        this.socket = io('http://localhost:3001');
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+        this.socket = io(backendUrl);
       }
       
       this.socket.emit('join-room', { roomCode, playerName });
@@ -292,7 +293,8 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
   async createRoom(playerName?: string): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
-        this.socket = io('http://localhost:3001');
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+        this.socket = io(backendUrl);
       }
       
       this.socket.emit('create-room', { gameId: 'tic-tac-toe', playerName });

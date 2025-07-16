@@ -48,7 +48,7 @@ const availableGames: GameInfo[] = [
 ];
 
 // Get all available games
-router.get('/', (req, res) => {
+router.get('/', (_, res) => {
   res.json(availableGames);
 });
 
@@ -58,7 +58,7 @@ router.get('/:gameId', (req, res) => {
   if (!game) {
     return res.status(404).json({ error: 'Game not found' });
   }
-  res.json(game);
+  return res.json(game);
 });
 
 // Get game leaderboard (placeholder for future implementation)

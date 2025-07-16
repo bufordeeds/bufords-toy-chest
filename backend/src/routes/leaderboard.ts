@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { dbRun, dbAll, dbGet, LeaderboardEntry } from '../services/database.js';
+import { dbRun, dbAll, dbGet } from '../services/database.js';
 
 const router = Router();
 
@@ -20,33 +20,6 @@ export interface LeaderboardResponse {
   daysAgo: number;
 }
 
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    if (diffHours === 0) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return diffMinutes <= 1 ? 'Just now' : `${diffMinutes} minutes ago`;
-    }
-    return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
-  } else if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7);
-    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
-  } else if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
-    return months === 1 ? '1 month ago' : `${months} months ago`;
-  } else {
-    const years = Math.floor(diffDays / 365);
-    return years === 1 ? '1 year ago' : `${years} years ago`;
-  }
-}
 
 // Submit a new high score
 router.post('/submit', async (req: Request, res: Response) => {
@@ -87,7 +60,7 @@ router.post('/submit', async (req: Request, res: Response) => {
     
     const rank = (rankResult?.rank || 0) + 1;
     
-    res.status(201).json({
+    return res.status(201).json({
       id,
       gameId,
       playerName,
@@ -99,7 +72,7 @@ router.post('/submit', async (req: Request, res: Response) => {
     
   } catch (error) {
     console.error('Error submitting score:', error);
-    res.status(500).json({ error: 'Failed to submit score' });
+    return res.status(500).json({ error: 'Failed to submit score' });
   }
 });
 
@@ -137,11 +110,11 @@ router.get('/:gameId', async (req: Request, res: Response) => {
       };
     });
     
-    res.json(response);
+    return res.json(response);
     
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
-    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    return res.status(500).json({ error: 'Failed to fetch leaderboard' });
   }
 });
 
@@ -173,7 +146,7 @@ router.post('/:gameId/check-rank', async (req: Request, res: Response) => {
     const isTopTen = rank <= 10;
     const wouldMakeTopTen = !tenthPlace || score > tenthPlace.score;
     
-    res.json({
+    return res.json({
       rank,
       isTopTen,
       wouldMakeTopTen,
@@ -182,7 +155,7 @@ router.post('/:gameId/check-rank', async (req: Request, res: Response) => {
     
   } catch (error) {
     console.error('Error checking rank:', error);
-    res.status(500).json({ error: 'Failed to check rank' });
+    return res.status(500).json({ error: 'Failed to check rank' });
   }
 });
 
@@ -208,7 +181,7 @@ router.get('/:gameId/personal-best/:playerName', async (req: Request, res: Respo
     
     const rank = (rankResult?.rank || 0) + 1;
     
-    res.json({
+    return res.json({
       personalBest: {
         ...personalBest,
         rank
@@ -217,7 +190,7 @@ router.get('/:gameId/personal-best/:playerName', async (req: Request, res: Respo
     
   } catch (error) {
     console.error('Error fetching personal best:', error);
-    res.status(500).json({ error: 'Failed to fetch personal best' });
+    return res.status(500).json({ error: 'Failed to fetch personal best' });
   }
 });
 

@@ -10,7 +10,7 @@ export function setupRoutes(app: Express): void {
   app.use('/api/leaderboard', leaderboardRoutes);
   
   // API info endpoint
-  app.get('/api', (req, res) => {
+  app.get('/api', (_, res) => {
     res.json({
       name: "Buford's Toy Chest API",
       version: '1.0.0',
