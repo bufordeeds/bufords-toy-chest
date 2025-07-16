@@ -32,7 +32,7 @@ export interface RankCheckResponse {
 }
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 
-  (!import.meta.env.DEV 
+  (import.meta.env.MODE === 'production' 
     ? 'https://toy-chest-backend.onrender.com' 
     : 'http://localhost:3001');
 

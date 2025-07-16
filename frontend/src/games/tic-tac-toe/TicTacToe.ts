@@ -265,7 +265,7 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-          (!import.meta.env.DEV 
+          (import.meta.env.MODE === 'production' 
             ? 'https://toy-chest-backend.onrender.com' 
             : 'http://localhost:3001');
         
@@ -318,7 +318,7 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-          (!import.meta.env.DEV 
+          (import.meta.env.MODE === 'production' 
             ? 'https://toy-chest-backend.onrender.com' 
             : 'http://localhost:3001');
         
