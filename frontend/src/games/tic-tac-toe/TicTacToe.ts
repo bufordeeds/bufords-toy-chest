@@ -264,13 +264,36 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
   async joinRoom(roomCode: string, playerName?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-        this.socket = io(backendUrl);
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+          (!import.meta.env.DEV 
+            ? 'https://toy-chest-backend.onrender.com' 
+            : 'http://localhost:3001');
+        
+        console.log('Connecting to backend:', backendUrl);
+        this.socket = io(backendUrl, {
+          timeout: 10000,
+          forceNew: true,
+          transports: ['websocket', 'polling']
+        });
+
+        this.socket.on('connect', () => {
+          console.log('Socket connected successfully');
+        });
+
+        this.socket.on('connect_error', (error) => {
+          console.error('Socket connection error:', error);
+          reject(new Error(`Connection failed: ${error.message}`));
+        });
+
+        this.socket.on('disconnect', (reason) => {
+          console.log('Socket disconnected:', reason);
+        });
       }
       
       this.socket.emit('join-room', { roomCode, playerName });
       
       this.socket.once('room-joined', (data) => {
+        console.log('Room joined successfully:', data);
         this.roomCode = data.roomCode;
         this.playerId = data.playerId;
         
@@ -283,6 +306,7 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       });
       
       this.socket.once('error', (error) => {
+        console.error('Room join error:', error);
         reject(new Error(error.message));
       });
       
@@ -293,13 +317,36 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
   async createRoom(playerName?: string): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-        this.socket = io(backendUrl);
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+          (!import.meta.env.DEV 
+            ? 'https://toy-chest-backend.onrender.com' 
+            : 'http://localhost:3001');
+        
+        console.log('Connecting to backend:', backendUrl);
+        this.socket = io(backendUrl, {
+          timeout: 10000,
+          forceNew: true,
+          transports: ['websocket', 'polling']
+        });
+
+        this.socket.on('connect', () => {
+          console.log('Socket connected successfully');
+        });
+
+        this.socket.on('connect_error', (error) => {
+          console.error('Socket connection error:', error);
+          reject(new Error(`Connection failed: ${error.message}`));
+        });
+
+        this.socket.on('disconnect', (reason) => {
+          console.log('Socket disconnected:', reason);
+        });
       }
       
       this.socket.emit('create-room', { gameId: 'tic-tac-toe', playerName });
       
       this.socket.once('room-created', (data) => {
+        console.log('Room created successfully:', data);
         this.roomCode = data.roomCode;
         this.playerId = data.playerId;
         
@@ -307,6 +354,7 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       });
       
       this.socket.once('error', (error) => {
+        console.error('Room creation error:', error);
         reject(new Error(error.message));
       });
       

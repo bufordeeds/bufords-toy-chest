@@ -76,7 +76,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
         setError(null);
         
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-          (import.meta.env.PROD 
+          (!import.meta.env.DEV 
             ? 'https://toy-chest-backend.onrender.com' 
             : 'http://localhost:3001');
         const response = await fetch(`${backendUrl}/api/leaderboard/${gameId}?limit=${limit}`);
