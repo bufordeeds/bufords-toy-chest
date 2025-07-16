@@ -23,6 +23,14 @@ export const HomePage: React.FC = () => {
           <p className="hero-subtitle">
             A collection of fun games to play alone or with friends
           </p>
+          <a 
+            href="https://github.com/bufordeeds/bufords-toy-chest" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="github-link"
+          >
+            View on GitHub
+          </a>
         </section>
         
         <section className="games-section">
