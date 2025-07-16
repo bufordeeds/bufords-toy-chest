@@ -1,6 +1,6 @@
 export type Player = 'X' | 'O';
 export type Cell = Player | null;
-export type GameStatus = 'playing' | 'won' | 'draw';
+export type GameStatus = 'waiting' | 'playing' | 'won' | 'draw';
 
 export interface Move {
   row: number;

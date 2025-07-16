@@ -25,6 +25,12 @@
   margin: 0 0 var(--spacing-md) 0;
 }
 
+.tic-tac-toe-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
 .tic-tac-toe-scores {
   font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
@@ -352,3 +358,104 @@
     transition: none !important;
   }
 }
+
+/* Menu and Multiplayer UI */
+.tic-tac-toe-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.tic-tac-toe-multiplayer-section {
+  text-align: center;
+  width: 100%;
+}
+
+.tic-tac-toe-multiplayer-section h3 {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.tic-tac-toe-multiplayer-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.tic-tac-toe-join-room {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.tic-tac-toe-input {
+  padding: var(--spacing-sm);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  text-align: center;
+  text-transform: uppercase;
+  min-width: 120px;
+}
+
+.tic-tac-toe-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.tic-tac-toe-error {
+  color: #ff6b6b;
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: var(--radius-md);
+}
+
+.tic-tac-toe-room-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.tic-tac-toe-room-code {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+
+.tic-tac-toe-room-code strong {
+  color: var(--color-primary);
+  font-family: monospace;
+  font-size: var(--font-size-xl);
+}
+
+.tic-tac-toe-players {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+/* Mobile responsive for menu */
+@media (max-width: 640px) {
+  .tic-tac-toe-join-room {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .tic-tac-toe-input {
+    width: 100%;
+  }
+  
+  .tic-tac-toe-multiplayer-controls {
+    width: 100%;
+  }
+}
+

@@ -1,25 +1,20 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { TicTacToe } from './TicTacToe';
 import type { Player, TicTacToeState } from './types';
-import { useStore } from '../../store/useStore';
-import { Leaderboard } from '../../components/Leaderboard';
-import { HighScoreModal } from '../../components/HighScoreModal';
-import { leaderboardService } from '../../services/leaderboardService';
 import './TicTacToeComponent.css';
 
 export const TicTacToeComponent: React.FC = () => {
   const gameRef = useRef<TicTacToe | null>(null);
   const [gameState, setGameState] = useState<TicTacToeState | null>(null);
-  const [showGameOverModal, setShowGameOverModal] = useState(false);
-  const [gameOverData, setGameOverData] = useState<{ 
-    score: number; 
-    rank?: number; 
-    isHighScore: boolean; 
-    winner: Player | null;
-    isDraw: boolean;
-  } | null>(null);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const updateGameScore = useStore((state) => state.updateGameScore);
+  const [gameMode, setGameMode] = useState<'menu' | 'local' | 'multiplayer'>('menu');
+  const [roomCode, setRoomCode] = useState<string>('');
+  const [joinRoomCode, setJoinRoomCode] = useState<string>('');
+  const [playerName, setPlayerName] = useState<string>('');
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [connectionError, setConnectionError] = useState<string>('');
+  const [players, setPlayers] = useState<any[]>([]);
+  const [isHost, setIsHost] = useState<boolean>(false);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
   
   useEffect(() => {
     const game = new TicTacToe();
@@ -29,39 +24,28 @@ export const TicTacToeComponent: React.FC = () => {
       setGameState({ ...state });
     };
     
-    game.onGameEnd = async (finalScore: number, _won: boolean) => {
-      const currentState = game.getState() as TicTacToeState;
-      
-      // Check for high score
-      const isHighScore = await leaderboardService.isHighScore('tic-tac-toe', finalScore);
-      let rank;
-      
-      if (isHighScore) {
-        rank = await leaderboardService.getRank('tic-tac-toe', finalScore);
-      }
-      
-      setGameOverData({
-        score: finalScore,
-        rank,
-        isHighScore,
-        winner: currentState.winner,
-        isDraw: currentState.gameStatus === 'draw',
-      });
-      
-      if (isHighScore) {
-        setShowGameOverModal(true);
-      }
+    // Set up multiplayer event handlers
+    game.onPlayerJoined = (player) => {
+      setPlayers(game.getPlayers());
+    };
+    
+    game.onPlayerLeft = (playerId) => {
+      setPlayers(game.getPlayers());
     };
     
     game.initialize();
     game.start();
     
+    // Set initial state immediately
+    setGameState(game.getState() as TicTacToeState);
+    
     return () => {
       if (gameRef.current) {
+        gameRef.current.leaveRoom();
         gameRef.current.end();
       }
     };
-  }, []);
+  }, []); // Remove gameMode dependency
   
   const handleCellClick = useCallback((row: number, col: number) => {
     if (gameRef.current && gameState?.gameStatus === 'playing') {
@@ -73,14 +57,72 @@ export const TicTacToeComponent: React.FC = () => {
     if (gameRef.current) {
       gameRef.current.newGame();
     }
-    setShowGameOverModal(false);
-    setGameOverData(null);
   }, []);
   
   const handleUndo = useCallback(() => {
     if (gameRef.current) {
       gameRef.current.undoLastMove();
     }
+  }, []);
+  
+  const handleCreateRoom = useCallback(async () => {
+    if (!gameRef.current || !playerName.trim()) return;
+    
+    setIsConnecting(true);
+    setConnectionError('');
+    
+    try {
+      const newRoomCode = await gameRef.current.createRoom(playerName.trim());
+      setRoomCode(newRoomCode);
+      setIsHost(true);
+      setGameMode('multiplayer');
+      setPlayers(gameRef.current.getPlayers());
+      setCurrentPlayerId(gameRef.current.getCurrentPlayer()?.id || '');
+    } catch (error) {
+      setConnectionError(error instanceof Error ? error.message : 'Failed to create room');
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [playerName]);
+  
+  const handleJoinRoom = useCallback(async () => {
+    if (!gameRef.current || !joinRoomCode.trim() || !playerName.trim()) return;
+    
+    setIsConnecting(true);
+    setConnectionError('');
+    
+    try {
+      await gameRef.current.joinRoom(joinRoomCode.trim().toUpperCase(), playerName.trim());
+      setRoomCode(joinRoomCode.trim().toUpperCase());
+      setIsHost(false);
+      setGameMode('multiplayer');
+      setPlayers(gameRef.current.getPlayers());
+      setCurrentPlayerId(gameRef.current.getCurrentPlayer()?.id || '');
+    } catch (error) {
+      setConnectionError(error instanceof Error ? error.message : 'Failed to join room');
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [joinRoomCode, playerName]);
+  
+  const handleStartGame = useCallback(() => {
+    if (gameRef.current && isHost) {
+      gameRef.current.sendGameAction({ type: 'start-game' });
+    }
+  }, [isHost]);
+  
+  const handleLeaveRoom = useCallback(() => {
+    if (gameRef.current) {
+      gameRef.current.leaveRoom();
+    }
+    setGameMode('menu');
+    setRoomCode('');
+    setJoinRoomCode('');
+    setPlayerName('');
+    setPlayers([]);
+    setIsHost(false);
+    setCurrentPlayerId('');
+    setConnectionError('');
   }, []);
   
   const handleKeyPress = useCallback((_event: KeyboardEvent) => {
@@ -94,18 +136,6 @@ export const TicTacToeComponent: React.FC = () => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
-  
-  const handleHighScoreSave = async (playerName: string) => {
-    if (gameOverData) {
-      await leaderboardService.addScore('tic-tac-toe', gameOverData.score, playerName);
-      updateGameScore('tic-tac-toe', gameOverData.score);
-    }
-    setShowGameOverModal(false);
-  };
-  
-  const handleHighScoreSkip = () => {
-    setShowGameOverModal(false);
-  };
   
   const renderCell = (row: number, col: number) => {
     const cell = gameState?.board[row][col];
@@ -134,10 +164,31 @@ export const TicTacToeComponent: React.FC = () => {
     if (!gameState) return '';
     
     switch (gameState.gameStatus) {
+      case 'waiting':
+        return gameMode === 'multiplayer' ? 
+          `Waiting for ${players.length}/2 players...` :
+          'Waiting to start...';
       case 'playing':
-        return `Player ${gameState.currentPlayer}'s turn`;
+        if (gameMode === 'multiplayer') {
+          // Find the current player by matching X/O to player position
+          const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
+          const currentPlayerName = players[currentPlayerIndex]?.name || `Player ${gameState.currentPlayer}`;
+          const isMyTurn = players[currentPlayerIndex]?.id === currentPlayerId;
+          
+          return isMyTurn ? "Your turn" : `${currentPlayerName}'s turn`;
+        } else {
+          return `Player ${gameState.currentPlayer}'s turn`;
+        }
       case 'won':
-        return `Player ${gameState.winner} wins!`;
+        if (gameMode === 'multiplayer') {
+          const winnerIndex = gameState.winner === 'X' ? 0 : 1;
+          const winnerName = players[winnerIndex]?.name || `Player ${gameState.winner}`;
+          const isMyWin = players[winnerIndex]?.id === currentPlayerId;
+          
+          return isMyWin ? "You win!" : `${winnerName} wins!`;
+        } else {
+          return `Player ${gameState.winner} wins!`;
+        }
       case 'draw':
         return "It's a draw!";
       default:
@@ -156,13 +207,95 @@ export const TicTacToeComponent: React.FC = () => {
     return <div className="tic-tac-toe-loading">Loading...</div>;
   }
   
+  // Menu screen
+  if (gameMode === 'menu') {
+    return (
+      <div className="tic-tac-toe-container">
+        <div className="tic-tac-toe-header">
+          <h1 className="tic-tac-toe-title">Tic-Tac-Toe</h1>
+          <p className="tic-tac-toe-subtitle">Choose your game mode</p>
+        </div>
+        
+        <div className="tic-tac-toe-menu">
+          <button
+            className="tic-tac-toe-button tic-tac-toe-button--primary"
+            onClick={() => setGameMode('local')}
+          >
+            Local Game
+          </button>
+          
+          <div className="tic-tac-toe-multiplayer-section">
+            <h3>Multiplayer</h3>
+            
+            <div className="tic-tac-toe-multiplayer-controls">
+              <input
+                type="text"
+                placeholder="Enter your name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="tic-tac-toe-input"
+                maxLength={20}
+              />
+              
+              <button
+                className="tic-tac-toe-button tic-tac-toe-button--secondary"
+                onClick={handleCreateRoom}
+                disabled={isConnecting || !playerName.trim()}
+              >
+                {isConnecting ? 'Creating...' : 'Create Room'}
+              </button>
+              
+              <div className="tic-tac-toe-join-room">
+                <input
+                  type="text"
+                  placeholder="Enter room code"
+                  value={joinRoomCode}
+                  onChange={(e) => setJoinRoomCode(e.target.value.toUpperCase())}
+                  className="tic-tac-toe-input"
+                  maxLength={6}
+                />
+                <button
+                  className="tic-tac-toe-button tic-tac-toe-button--secondary"
+                  onClick={handleJoinRoom}
+                  disabled={isConnecting || !joinRoomCode.trim() || !playerName.trim()}
+                >
+                  {isConnecting ? 'Joining...' : 'Join Room'}
+                </button>
+              </div>
+            </div>
+            
+            {connectionError && (
+              <div className="tic-tac-toe-error">
+                {connectionError}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="tic-tac-toe-container">
       <div className="tic-tac-toe-header">
         <h1 className="tic-tac-toe-title">Tic-Tac-Toe</h1>
-        <div className="tic-tac-toe-scores">
-          {getScoreText()}
-        </div>
+        
+        {gameMode === 'multiplayer' && (
+          <div className="tic-tac-toe-room-info">
+            <div className="tic-tac-toe-room-code">
+              Room Code: <strong>{roomCode}</strong>
+            </div>
+            <div className="tic-tac-toe-players">
+              Players: {players.map(p => p.name).join(', ')}
+            </div>
+          </div>
+        )}
+        
+        {gameMode === 'local' && (
+          <div className="tic-tac-toe-scores">
+            {getScoreText()}
+          </div>
+        )}
       </div>
       
       <div className="tic-tac-toe-game-area">
@@ -188,30 +321,54 @@ export const TicTacToeComponent: React.FC = () => {
         </div>
         
         <div className="tic-tac-toe-controls">
-          <button
-            className="tic-tac-toe-button tic-tac-toe-button--primary"
-            onClick={handleNewGame}
-          >
-            New Game
-          </button>
+          {gameMode === 'multiplayer' && (
+            <>
+              {isHost && players.length === 2 && gameState.gameStatus !== 'playing' && (
+                <button
+                  className="tic-tac-toe-button tic-tac-toe-button--primary"
+                  onClick={handleStartGame}
+                >
+                  Start Game
+                </button>
+              )}
+              
+              <button
+                className="tic-tac-toe-button tic-tac-toe-button--secondary"
+                onClick={handleLeaveRoom}
+              >
+                Leave Room
+              </button>
+            </>
+          )}
+          
+          {gameMode === 'local' && (
+            <>
+              <button
+                className="tic-tac-toe-button tic-tac-toe-button--primary"
+                onClick={handleNewGame}
+              >
+                New Game
+              </button>
+              
+              <button
+                className="tic-tac-toe-button tic-tac-toe-button--secondary"
+                onClick={handleUndo}
+                disabled={!gameState.canUndo}
+              >
+                Undo ({gameRef.current?.getUndosRemaining() || 0}/3)
+              </button>
+            </>
+          )}
           
           <button
             className="tic-tac-toe-button tic-tac-toe-button--secondary"
-            onClick={handleUndo}
-            disabled={!gameState.canUndo}
+            onClick={() => setGameMode('menu')}
           >
-            Undo ({gameRef.current?.getUndosRemaining() || 0}/3)
-          </button>
-          
-          <button
-            className="tic-tac-toe-button tic-tac-toe-button--secondary"
-            onClick={() => setShowLeaderboard(true)}
-          >
-            Leaderboard
+            Back to Menu
           </button>
         </div>
         
-        {gameState.gameStatus !== 'playing' && (
+        {(gameState.gameStatus === 'won' || gameState.gameStatus === 'draw') && (
           <div className="tic-tac-toe-game-over">
             <div className="tic-tac-toe-game-over-message">
               {gameState.gameStatus === 'won' 
@@ -228,24 +385,6 @@ export const TicTacToeComponent: React.FC = () => {
         )}
       </div>
       
-      {showLeaderboard && (
-        <Leaderboard
-          gameId="tic-tac-toe"
-        />
-      )}
-      
-      {showGameOverModal && gameOverData && (
-        <HighScoreModal
-          isOpen={showGameOverModal}
-          onClose={() => setShowGameOverModal(false)}
-          onSubmit={handleHighScoreSave}
-          onNewGame={handleNewGame}
-          gameId="tic-tac-toe"
-          score={gameOverData.score}
-          rank={gameOverData.rank}
-          isHighScore={gameOverData.isHighScore}
-        />
-      )}
     </div>
   );
 };

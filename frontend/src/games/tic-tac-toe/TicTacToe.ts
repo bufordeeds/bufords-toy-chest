@@ -1,11 +1,18 @@
 import { BaseGame } from '../../types/gameFramework';
-import type { Player, Cell, GameStatus, Move, TicTacToeState, WinCondition } from './types';
+import type { MultiplayerGame, Player as GamePlayer } from '../../types/gameFramework';
+import type { Player, Cell, GameStatus, Move, PlayerScores, TicTacToeState, WinCondition } from './types';
+import { io, Socket } from 'socket.io-client';
 
-export class TicTacToe extends BaseGame {
+export class TicTacToe extends BaseGame implements MultiplayerGame {
   private static readonly BOARD_SIZE = 3;
   private static readonly MAX_UNDOS = 3;
   
   private undosUsed: number = 0;
+  private socket: Socket | null = null;
+  private roomCode: string | null = null;
+  private playerId: string | null = null;
+  private isHost: boolean = false;
+  private players: GamePlayer[] = [];
   
   constructor() {
     super('tic-tac-toe', 'Tic-Tac-Toe', 'multiplayer');
@@ -29,20 +36,6 @@ export class TicTacToe extends BaseGame {
     this.isInitialized = true;
   }
   
-  handleInput(input: { row: number; col: number }): boolean {
-    if (!this.isRunning || this.gameState.gameStatus !== 'playing') {
-      return false;
-    }
-    
-    const { row, col } = input;
-    
-    if (!this.isValidMove(row, col)) {
-      return false;
-    }
-    
-    this.makeMove(row, col);
-    return true;
-  }
   
   private createEmptyBoard(): Cell[][] {
     return Array(TicTacToe.BOARD_SIZE).fill(null).map(() => 
@@ -264,5 +257,177 @@ export class TicTacToe extends BaseGame {
   reset(): void {
     this.undosUsed = 0;
     super.reset();
+  }
+  
+  // Multiplayer Game interface methods
+  async joinRoom(roomCode: string, playerName?: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        this.socket = io('http://localhost:3001');
+      }
+      
+      this.socket.emit('join-room', { roomCode, playerName });
+      
+      this.socket.once('room-joined', (data) => {
+        this.roomCode = data.roomCode;
+        this.playerId = data.playerId;
+        this.isHost = data.isHost;
+        
+        // Update game state from server
+        if (data.gameState) {
+          this.syncGameStateFromServer(data.gameState);
+        }
+        
+        resolve();
+      });
+      
+      this.socket.once('error', (error) => {
+        reject(new Error(error.message));
+      });
+      
+      this.setupSocketListeners();
+    });
+  }
+  
+  async createRoom(playerName?: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        this.socket = io('http://localhost:3001');
+      }
+      
+      this.socket.emit('create-room', { gameId: 'tic-tac-toe', playerName });
+      
+      this.socket.once('room-created', (data) => {
+        this.roomCode = data.roomCode;
+        this.playerId = data.playerId;
+        this.isHost = data.isHost;
+        
+        resolve(data.roomCode);
+      });
+      
+      this.socket.once('error', (error) => {
+        reject(new Error(error.message));
+      });
+      
+      this.setupSocketListeners();
+    });
+  }
+  
+  leaveRoom(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    
+    this.roomCode = null;
+    this.playerId = null;
+    this.isHost = false;
+    this.players = [];
+  }
+  
+  getPlayers(): GamePlayer[] {
+    return this.players;
+  }
+  
+  getCurrentPlayer(): GamePlayer | null {
+    return this.players.find(p => p.id === this.playerId) || null;
+  }
+  
+  sendGameAction(action: any): void {
+    if (this.socket && this.roomCode) {
+      this.socket.emit('game-action', {
+        roomCode: this.roomCode,
+        action
+      });
+    }
+  }
+  
+  // Multiplayer event handlers
+  onPlayerJoined?: (player: GamePlayer) => void;
+  onPlayerLeft?: (playerId: string) => void;
+  onGameAction?: (action: any, playerId: string) => void;
+  
+  private setupSocketListeners(): void {
+    if (!this.socket) return;
+    
+    this.socket.on('player-joined', (data) => {
+      this.players = data.players;
+      this.onPlayerJoined?.(data.players[data.players.length - 1]);
+    });
+    
+    this.socket.on('player-left', (data) => {
+      this.players = data.players;
+      this.onPlayerLeft?.(data.playerId);
+    });
+    
+    this.socket.on('game-state-updated', (data) => {
+      this.syncGameStateFromServer(data.gameState);
+      this.onGameAction?.(data.lastAction, data.playerId);
+    });
+    
+    this.socket.on('host-changed', (data) => {
+      this.isHost = data.newHostId === this.playerId;
+    });
+  }
+  
+  private syncGameStateFromServer(serverState: any): void {
+    // Convert server state (flat array) to client state (2D array)
+    const board = this.createEmptyBoard();
+    for (let i = 0; i < 9; i++) {
+      const row = Math.floor(i / 3);
+      const col = i % 3;
+      board[row][col] = serverState.board[i];
+    }
+    
+    this.gameState = {
+      ...this.gameState,
+      board,
+      currentPlayer: serverState.currentPlayer,
+      gameStatus: serverState.gameStatus === 'finished' ? 
+        (serverState.winner === 'tie' ? 'draw' : 'won') : 
+        serverState.gameStatus,
+      winner: serverState.winner === 'tie' ? null : serverState.winner,
+      winningLine: this.calculateWinningLine(board, serverState.winner),
+    };
+    
+    this.onStateChange?.(this.gameState);
+  }
+  
+  private calculateWinningLine(board: Cell[][], winner: string | null): number[] | null {
+    if (!winner || winner === 'tie') return null;
+    
+    const winCondition = this.getWinCondition();
+    if (winCondition) {
+      return winCondition.positions.map(([row, col]) => row * 3 + col);
+    }
+    
+    return null;
+  }
+  
+  // Override handleInput to send multiplayer actions
+  handleInput(input: { row: number; col: number }): boolean {
+    if (!this.isRunning || this.gameState.gameStatus !== 'playing') {
+      return false;
+    }
+    
+    const { row, col } = input;
+    const position = row * 3 + col;
+    
+    if (!this.isValidMove(row, col)) {
+      return false;
+    }
+    
+    // In multiplayer mode, send action to server
+    if (this.socket && this.roomCode) {
+      this.sendGameAction({
+        type: 'make-move',
+        position
+      });
+      return true;
+    }
+    
+    // Fallback to local game for single player
+    this.makeMove(row, col);
+    return true;
   }
 }
