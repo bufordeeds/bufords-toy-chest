@@ -19,7 +19,7 @@ export const HighScoreModal: React.FC<HighScoreModalProps> = ({
   onClose,
   onSubmit,
   onNewGame,
-  gameId,
+  gameId: _gameId,
   score,
   rank,
   isNewRecord = false,
@@ -61,9 +61,6 @@ export const HighScoreModal: React.FC<HighScoreModalProps> = ({
     }
   };
 
-  const handleSkip = () => {
-    onClose();
-  };
 
   const handleTryAgain = () => {
     onNewGame();

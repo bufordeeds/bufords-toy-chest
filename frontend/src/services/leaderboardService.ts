@@ -31,7 +31,7 @@ export interface RankCheckResponse {
   tenthPlaceScore: number | null;
 }
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
+const API_BASE_URL = import.meta.env.PROD 
   ? 'https://your-backend-domain.com' 
   : 'http://localhost:3001';
 
@@ -111,6 +111,20 @@ class LeaderboardService {
       console.error('Failed to check if high score:', error);
       return false;
     }
+  }
+
+  async getRank(gameId: string, score: number): Promise<number> {
+    try {
+      const rankCheck = await this.checkRank(gameId, score);
+      return rankCheck.rank;
+    } catch (error) {
+      console.error('Failed to get rank:', error);
+      return 0;
+    }
+  }
+
+  async addScore(gameId: string, score: number, playerName: string): Promise<SubmitScoreResponse> {
+    return this.submitScore({ gameId, score, playerName });
   }
 }
 
