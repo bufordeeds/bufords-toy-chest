@@ -57,6 +57,23 @@ export const AboutPage: React.FC = () => {
 								come from understanding what players truly enjoy.
 							</p>
 						</div>
+
+						<div className='about-card support-card'>
+							<h2 className='section-title'>Support Daily Games</h2>
+							<p className='about-text'>
+								If you enjoy Daily Games and would like to support its development, 
+								consider buying me a coffee! Your support helps keep the site running 
+								and motivates me to create more engaging puzzles and games.
+							</p>
+							<a 
+								href='https://coff.ee/bufordeeds' 
+								target='_blank' 
+								rel='noopener noreferrer'
+								className='coffee-button'
+							>
+								Buy Me a Coffee
+							</a>
+						</div>
 					</div>
 				</section>
 			</div>
