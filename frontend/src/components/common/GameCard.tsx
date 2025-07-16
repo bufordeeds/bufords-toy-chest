@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Game } from '../../types/game';
+import type { LeaderboardEntry } from '../../services/leaderboardService';
 import './GameCard.css';
 
 interface GameCardProps {
   game: Game;
   highScore?: number;
+  leaderboardEntry?: LeaderboardEntry | null;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ game, highScore }) => {
+export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboardEntry }) => {
   return (
     <Link to={`/game/${game.id}`} className="game-card">
       <div className="game-card-icon">{game.icon}</div>
@@ -26,7 +28,15 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore }) => {
       
       {highScore !== undefined && (
         <div className="game-card-score">
-          <span>Best: {highScore}</span>
+          <span>Best: {highScore.toLocaleString()}</span>
+        </div>
+      )}
+      
+      {leaderboardEntry && (
+        <div className="game-card-record">
+          <span className="record-label">Record:</span>
+          <span className="record-score">{leaderboardEntry.score.toLocaleString()}</span>
+          <span className="record-holder">by {leaderboardEntry.playerName}</span>
         </div>
       )}
       

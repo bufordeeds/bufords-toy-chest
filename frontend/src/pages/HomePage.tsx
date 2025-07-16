@@ -1,11 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { GameCard } from '../components/common/GameCard';
 import { games } from '../data/games';
 import { useStore } from '../store/useStore';
+import { leaderboardService, type LeaderboardEntry } from '../services/leaderboardService';
 import './HomePage.css';
 
 export const HomePage: React.FC = () => {
   const gameScores = useStore((state) => state.gameScores);
+  const [leaderboardData, setLeaderboardData] = useState<Record<string, LeaderboardEntry | null>>({});
+  
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      const leaderboardEntries: Record<string, LeaderboardEntry | null> = {};
+      
+      for (const game of games) {
+        if (game.type === 'single') {
+          try {
+            const leaderboard = await leaderboardService.getLeaderboard(game.id, 1);
+            leaderboardEntries[game.id] = leaderboard[0] || null;
+          } catch (error) {
+            console.error(`Failed to fetch leaderboard for ${game.id}:`, error);
+            leaderboardEntries[game.id] = null;
+          }
+        }
+      }
+      
+      setLeaderboardData(leaderboardEntries);
+    };
+    
+    fetchLeaderboardData();
+  }, []);
   
   const getHighScore = (gameId: string) => {
     const score = gameScores.find((s) => s.gameId === gameId);
@@ -41,6 +65,7 @@ export const HomePage: React.FC = () => {
                 key={game.id}
                 game={game}
                 highScore={getHighScore(game.id)}
+                leaderboardEntry={leaderboardData[game.id]}
               />
             ))}
           </div>

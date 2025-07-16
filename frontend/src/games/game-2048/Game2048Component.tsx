@@ -20,7 +20,7 @@ export const Game2048Component: React.FC = () => {
     isHighScore: boolean; 
     hasWon: boolean 
   } | null>(null);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showLeaderboard] = useState(true);
   const updateGameScore = useStore((state) => state.updateGameScore);
   const gameScores = useStore((state) => state.gameScores);
   
@@ -240,10 +240,7 @@ export const Game2048Component: React.FC = () => {
         score: gameOverData.score
       });
       
-      // Refresh leaderboard if it's visible
-      if (showLeaderboard) {
-        // The Leaderboard component will automatically refresh
-      }
+      // The Leaderboard component will automatically refresh
     } catch (error) {
       console.error('Failed to submit high score:', error);
       throw error;
@@ -260,9 +257,6 @@ export const Game2048Component: React.FC = () => {
     handleGameOverModalClose();
   };
 
-  const toggleLeaderboard = () => {
-    setShowLeaderboard(!showLeaderboard);
-  };
   
   if (!gameState) {
     return <div className="game-loading">Loading...</div>;
@@ -293,9 +287,6 @@ export const Game2048Component: React.FC = () => {
             Undo
           </button>
         )}
-        <button className="btn-secondary" onClick={toggleLeaderboard}>
-          {showLeaderboard ? 'Hide' : 'Show'} Leaderboard
-        </button>
       </div>
       
       <div className="game-board">
@@ -355,15 +346,13 @@ export const Game2048Component: React.FC = () => {
         </div>
       </div>
 
-      {showLeaderboard && (
-        <div className="game-leaderboard">
-          <Leaderboard 
-            gameId="2048" 
-            title="2048 Leaderboard"
-            limit={10}
-          />
-        </div>
-      )}
+      <div className="game-leaderboard">
+        <Leaderboard 
+          gameId="2048" 
+          title="2048 Leaderboard"
+          limit={10}
+        />
+      </div>
 
       <HighScoreModal
         isOpen={showGameOverModal}

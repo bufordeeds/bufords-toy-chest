@@ -103,6 +103,33 @@
   margin-bottom: var(--spacing-sm);
 }
 
+.game-card-record {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: baseline;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-sm);
+}
+
+.record-label {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.record-score {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.record-holder {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
 .game-card-tags {
   display: flex;
   flex-wrap: wrap;
