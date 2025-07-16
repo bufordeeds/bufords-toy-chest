@@ -38,7 +38,7 @@ class VotingService {
 
   async getVotes(): Promise<GameVotes[]> {
     try {
-      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/votes`);
+      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/voting/votes`);
       return response.json();
     } catch (error) {
       console.error('Failed to fetch votes:', error);
@@ -48,7 +48,7 @@ class VotingService {
 
   async voteForGame(gameId: string): Promise<VoteResponse | null> {
     try {
-      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/votes/${gameId}`, {
+      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/voting/votes/${gameId}`, {
         method: 'POST',
       });
       return response.json();
@@ -60,7 +60,7 @@ class VotingService {
 
   async removeVote(gameId: string): Promise<VoteResponse | null> {
     try {
-      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/votes/${gameId}`, {
+      const response = await this.fetchWithErrorHandling(`${API_BASE_URL}/api/voting/votes/${gameId}`, {
         method: 'DELETE',
       });
       return response.json();

@@ -38,6 +38,13 @@ export interface LeaderboardEntry {
   achievedAt: Date;
 }
 
+export interface GameVote {
+  id: string;
+  gameId: string;
+  voterIp: string;
+  votedAt: Date;
+}
+
 export async function initDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log('Initializing database...');
@@ -86,8 +93,17 @@ export async function initDatabase(): Promise<void> {
           score INTEGER NOT NULL,
           achievedAt TEXT NOT NULL
         )`,
+        `CREATE TABLE IF NOT EXISTS game_votes (
+          id TEXT PRIMARY KEY,
+          gameId TEXT NOT NULL,
+          voterIp TEXT NOT NULL,
+          votedAt TEXT NOT NULL,
+          UNIQUE(gameId, voterIp)
+        )`,
         `CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score 
-         ON leaderboard(gameId, score DESC)`
+         ON leaderboard(gameId, score DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_game_votes_game_id 
+         ON game_votes(gameId)`
       ];
       
       let currentIndex = 0;

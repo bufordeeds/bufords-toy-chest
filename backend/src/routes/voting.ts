@@ -4,6 +4,119 @@ import { dbRun, dbGet, dbAll } from '../services/database.js';
 
 const router = express.Router();
 
+// Game voting endpoints
+// Get all game votes
+router.get('/votes', async (req, res) => {
+  try {
+    const voterIp = req.ip || req.connection.remoteAddress || 'unknown';
+    
+    // Get all coming-soon games and their vote counts
+    const gameVotes = await dbAll(`
+      SELECT 
+        gameId,
+        COUNT(*) as votes,
+        MAX(CASE WHEN voterIp = ? THEN 1 ELSE 0 END) as userVoted
+      FROM game_votes 
+      GROUP BY gameId
+    `, [voterIp]);
+    
+    // Include games with 0 votes for coming-soon games
+    const allGames = ['word-search', 'connect4']; // These are the coming-soon games
+    const result = allGames.map(gameId => {
+      const gameVote = gameVotes.find((v: any) => v.gameId === gameId);
+      return {
+        gameId,
+        votes: gameVote ? gameVote.votes : 0,
+        userVoted: gameVote ? gameVote.userVoted === 1 : false
+      };
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to fetch game votes:', error);
+    res.status(500).json({ error: 'Failed to fetch votes' });
+  }
+});
+
+// Vote for a game
+router.post('/votes/:gameId', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const voterIp = req.ip || req.connection.remoteAddress || 'unknown';
+    
+    // Check if this IP has already voted for this game
+    const existingVote = await dbGet(
+      'SELECT * FROM game_votes WHERE gameId = ? AND voterIp = ?',
+      [gameId, voterIp]
+    );
+    
+    if (existingVote) {
+      return res.status(409).json({ error: 'You have already voted for this game' });
+    }
+    
+    // Add vote
+    const voteId = uuidv4();
+    const votedAt = new Date().toISOString();
+    
+    await dbRun(
+      'INSERT INTO game_votes (id, gameId, voterIp, votedAt) VALUES (?, ?, ?, ?)',
+      [voteId, gameId, voterIp, votedAt]
+    );
+    
+    // Get updated vote count
+    const voteCount = await dbGet(
+      'SELECT COUNT(*) as votes FROM game_votes WHERE gameId = ?',
+      [gameId]
+    );
+    
+    return res.json({ 
+      gameId, 
+      votes: voteCount.votes 
+    });
+  } catch (error) {
+    console.error('Failed to vote for game:', error);
+    return res.status(500).json({ error: 'Failed to record vote' });
+  }
+});
+
+// Remove vote for a game
+router.delete('/votes/:gameId', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const voterIp = req.ip || req.connection.remoteAddress || 'unknown';
+    
+    // Check if this IP has voted for this game
+    const existingVote = await dbGet(
+      'SELECT * FROM game_votes WHERE gameId = ? AND voterIp = ?',
+      [gameId, voterIp]
+    );
+    
+    if (!existingVote) {
+      return res.status(404).json({ error: 'No vote found for this game' });
+    }
+    
+    // Remove vote
+    await dbRun(
+      'DELETE FROM game_votes WHERE gameId = ? AND voterIp = ?',
+      [gameId, voterIp]
+    );
+    
+    // Get updated vote count
+    const voteCount = await dbGet(
+      'SELECT COUNT(*) as votes FROM game_votes WHERE gameId = ?',
+      [gameId]
+    );
+    
+    return res.json({ 
+      gameId, 
+      votes: voteCount.votes 
+    });
+  } catch (error) {
+    console.error('Failed to remove vote:', error);
+    return res.status(500).json({ error: 'Failed to remove vote' });
+  }
+});
+
 // Get all nominations
 router.get('/nominations', async (_, res) => {
   try {

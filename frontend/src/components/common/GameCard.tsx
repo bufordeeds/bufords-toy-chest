@@ -59,7 +59,14 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
         </div>
         
         {votes && (
-          <div className="voting-section">
+          <div 
+            className="voting-section"
+            style={{ 
+              position: 'relative', 
+              zIndex: 10, 
+              pointerEvents: 'auto'
+            }}
+          >
             <div className="vote-count">
               <span className="vote-number">{votes.votes}</span>
               <span className="vote-label">votes</span>
@@ -67,6 +74,12 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
             <button 
               className={`vote-button ${votes.userVoted ? 'voted' : ''}`}
               onClick={handleVote}
+              style={{ 
+                pointerEvents: 'auto', 
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 11
+              }}
             >
               {votes.userVoted ? 'Remove Vote' : 'Vote'}
             </button>

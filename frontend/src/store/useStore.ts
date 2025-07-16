@@ -100,11 +100,20 @@ export const useStore = create<AppStore>()(
       gameVotes: [],
       setGameVotes: (votes) => set({ gameVotes: votes }),
       updateGameVote: (gameId, votes, userVoted) =>
-        set((state) => ({
-          gameVotes: state.gameVotes.map((v) =>
-            v.gameId === gameId ? { ...v, votes, userVoted } : v
-          ),
-        })),
+        set((state) => {
+          const existingVoteIndex = state.gameVotes.findIndex((v) => v.gameId === gameId);
+          if (existingVoteIndex !== -1) {
+            // Update existing vote
+            const updatedVotes = [...state.gameVotes];
+            updatedVotes[existingVoteIndex] = { ...updatedVotes[existingVoteIndex], votes, userVoted };
+            return { gameVotes: updatedVotes };
+          } else {
+            // Add new vote entry
+            return {
+              gameVotes: [...state.gameVotes, { gameId, votes, userVoted }]
+            };
+          }
+        }),
     }),
     {
       name: 'bufords-toy-chest',
