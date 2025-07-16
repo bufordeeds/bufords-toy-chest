@@ -147,6 +147,16 @@
   cursor: not-allowed;
 }
 
+.tic-tac-toe-cell--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tic-tac-toe-cell--disabled:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
 .tic-tac-toe-cell--winning {
   background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
   animation: winningPulse 1s ease-in-out infinite alternate;
@@ -441,6 +451,29 @@
 .tic-tac-toe-players {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
+}
+
+.tic-tac-toe-waiting {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.tic-tac-toe-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: tic-tac-toe-spin 1s linear infinite;
+}
+
+@keyframes tic-tac-toe-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Mobile responsive for menu */

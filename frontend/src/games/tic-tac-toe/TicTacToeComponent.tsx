@@ -26,7 +26,13 @@ export const TicTacToeComponent: React.FC = () => {
     
     // Set up multiplayer event handlers
     game.onPlayerJoined = (player) => {
-      setPlayers(game.getPlayers());
+      const newPlayers = game.getPlayers();
+      setPlayers(newPlayers);
+      
+      // Auto-start game when 2 players join
+      if (newPlayers.length === 2 && gameRef.current) {
+        gameRef.current.sendGameAction({ type: 'start-game' });
+      }
     };
     
     game.onPlayerLeft = (playerId) => {
@@ -48,10 +54,21 @@ export const TicTacToeComponent: React.FC = () => {
   }, []); // Remove gameMode dependency
   
   const handleCellClick = useCallback((row: number, col: number) => {
-    if (gameRef.current && gameState?.gameStatus === 'playing') {
-      gameRef.current.handleInput({ row, col });
+    if (!gameRef.current || gameState?.gameStatus !== 'playing') return;
+    
+    // In multiplayer mode, check if it's the current player's turn
+    if (gameMode === 'multiplayer' && players.length === 2) {
+      const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
+      const currentPlayerId = players[currentPlayerIndex]?.id;
+      
+      // Only allow the current player to make a move
+      if (currentPlayerId !== gameRef.current.getCurrentPlayer()?.id) {
+        return; // Not this player's turn
+      }
     }
-  }, [gameState?.gameStatus]);
+    
+    gameRef.current.handleInput({ row, col });
+  }, [gameState?.gameStatus, gameMode, players, gameState?.currentPlayer]);
   
   const handleNewGame = useCallback(() => {
     if (gameRef.current) {
@@ -141,14 +158,22 @@ export const TicTacToeComponent: React.FC = () => {
     const cell = gameState?.board[row][col];
     const isWinningCell = gameState?.winningLine?.includes(row * 3 + col);
     
+    // Check if it's the current player's turn in multiplayer
+    let isMyTurn = true;
+    if (gameMode === 'multiplayer' && players.length === 2 && gameState) {
+      const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
+      const currentPlayerId = players[currentPlayerIndex]?.id;
+      isMyTurn = currentPlayerId === gameRef.current?.getCurrentPlayer()?.id;
+    }
+    
     return (
       <button
         key={`${row}-${col}`}
         className={`tic-tac-toe-cell ${cell ? `tic-tac-toe-cell--${cell.toLowerCase()}` : ''} ${
           isWinningCell ? 'tic-tac-toe-cell--winning' : ''
-        }`}
+        } ${!isMyTurn ? 'tic-tac-toe-cell--disabled' : ''}`}
         onClick={() => handleCellClick(row, col)}
-        disabled={cell !== null || gameState?.gameStatus !== 'playing'}
+        disabled={cell !== null || gameState?.gameStatus !== 'playing' || !isMyTurn}
         aria-label={`Cell ${row + 1}, ${col + 1}${cell ? `, ${cell}` : ', empty'}`}
       >
         {cell && (
@@ -288,6 +313,12 @@ export const TicTacToeComponent: React.FC = () => {
             <div className="tic-tac-toe-players">
               Players: {players.map(p => p.name).join(', ')}
             </div>
+            {players.length === 1 && (
+              <div className="tic-tac-toe-waiting">
+                <div className="tic-tac-toe-spinner"></div>
+                <span>Waiting for second player...</span>
+              </div>
+            )}
           </div>
         )}
         
@@ -322,23 +353,12 @@ export const TicTacToeComponent: React.FC = () => {
         
         <div className="tic-tac-toe-controls">
           {gameMode === 'multiplayer' && (
-            <>
-              {isHost && players.length === 2 && gameState.gameStatus !== 'playing' && (
-                <button
-                  className="tic-tac-toe-button tic-tac-toe-button--primary"
-                  onClick={handleStartGame}
-                >
-                  Start Game
-                </button>
-              )}
-              
-              <button
-                className="tic-tac-toe-button tic-tac-toe-button--secondary"
-                onClick={handleLeaveRoom}
-              >
-                Leave Room
-              </button>
-            </>
+            <button
+              className="tic-tac-toe-button tic-tac-toe-button--secondary"
+              onClick={handleLeaveRoom}
+            >
+              Leave Room
+            </button>
           )}
           
           {gameMode === 'local' && (
@@ -372,7 +392,16 @@ export const TicTacToeComponent: React.FC = () => {
           <div className="tic-tac-toe-game-over">
             <div className="tic-tac-toe-game-over-message">
               {gameState.gameStatus === 'won' 
-                ? `🎉 Player ${gameState.winner} wins!` 
+                ? (() => {
+                    if (gameMode === 'multiplayer') {
+                      const winnerIndex = gameState.winner === 'X' ? 0 : 1;
+                      const winnerName = players[winnerIndex]?.name || `Player ${gameState.winner}`;
+                      const isMyWin = players[winnerIndex]?.id === currentPlayerId;
+                      return isMyWin ? "🎉 You win!" : `🎉 ${winnerName} wins!`;
+                    } else {
+                      return `🎉 Player ${gameState.winner} wins!`;
+                    }
+                  })()
                 : '🤝 It\'s a draw!'}
             </div>
             <button
