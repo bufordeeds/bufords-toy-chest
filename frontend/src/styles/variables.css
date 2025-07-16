@@ -21,6 +21,7 @@
   --color-text-secondary: #636E72;
   --color-text-light: #B2BEC3;
   --color-border: #E1E8ED;
+  --color-overlay: rgba(0, 0, 0, 0.5);
   
   /* Typography */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -90,5 +91,6 @@
     --color-text-secondary: #B2BEC3;
     --color-text-light: #636E72;
     --color-border: #2D3436;
+    --color-overlay: rgba(0, 0, 0, 0.7);
   }
 }
