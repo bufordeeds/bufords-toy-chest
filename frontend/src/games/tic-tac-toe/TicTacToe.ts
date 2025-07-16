@@ -1,6 +1,6 @@
 import { BaseGame } from '../../types/gameFramework';
 import type { MultiplayerGame, Player as GamePlayer } from '../../types/gameFramework';
-import type { Player, Cell, GameStatus, Move, PlayerScores, TicTacToeState, WinCondition } from './types';
+import type { Player, Cell, GameStatus, Move, TicTacToeState, WinCondition } from './types';
 import { io, Socket } from 'socket.io-client';
 
 export class TicTacToe extends BaseGame implements MultiplayerGame {
@@ -11,8 +11,9 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
   private socket: Socket | null = null;
   private roomCode: string | null = null;
   private playerId: string | null = null;
-  private isHost: boolean = false;
   private players: GamePlayer[] = [];
+  
+  readonly type = 'multiplayer' as const;
   
   constructor() {
     super('tic-tac-toe', 'Tic-Tac-Toe', 'multiplayer');
@@ -271,7 +272,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       this.socket.once('room-joined', (data) => {
         this.roomCode = data.roomCode;
         this.playerId = data.playerId;
-        this.isHost = data.isHost;
         
         // Update game state from server
         if (data.gameState) {
@@ -300,7 +300,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       this.socket.once('room-created', (data) => {
         this.roomCode = data.roomCode;
         this.playerId = data.playerId;
-        this.isHost = data.isHost;
         
         resolve(data.roomCode);
       });
@@ -321,7 +320,6 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
     
     this.roomCode = null;
     this.playerId = null;
-    this.isHost = false;
     this.players = [];
   }
   
@@ -365,8 +363,8 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
       this.onGameAction?.(data.lastAction, data.playerId);
     });
     
-    this.socket.on('host-changed', (data) => {
-      this.isHost = data.newHostId === this.playerId;
+    this.socket.on('host-changed', () => {
+      // Host changed event - could be used for UI updates if needed
     });
   }
   
@@ -393,7 +391,7 @@ export class TicTacToe extends BaseGame implements MultiplayerGame {
     this.onStateChange?.(this.gameState);
   }
   
-  private calculateWinningLine(board: Cell[][], winner: string | null): number[] | null {
+  private calculateWinningLine(_board: Cell[][], winner: string | null): number[] | null {
     if (!winner || winner === 'tie') return null;
     
     const winCondition = this.getWinCondition();

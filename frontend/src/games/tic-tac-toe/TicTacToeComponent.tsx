@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { TicTacToe } from './TicTacToe';
-import type { Player, TicTacToeState } from './types';
+import type { TicTacToeState } from './types';
+import type { Player as GamePlayer } from '../../types/gameFramework';
 import './TicTacToeComponent.css';
 
 export const TicTacToeComponent: React.FC = () => {
@@ -12,8 +13,7 @@ export const TicTacToeComponent: React.FC = () => {
   const [playerName, setPlayerName] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [connectionError, setConnectionError] = useState<string>('');
-  const [players, setPlayers] = useState<any[]>([]);
-  const [isHost, setIsHost] = useState<boolean>(false);
+  const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
   
   useEffect(() => {
@@ -25,7 +25,7 @@ export const TicTacToeComponent: React.FC = () => {
     };
     
     // Set up multiplayer event handlers
-    game.onPlayerJoined = (player) => {
+    game.onPlayerJoined = () => {
       const newPlayers = game.getPlayers();
       setPlayers(newPlayers);
       
@@ -35,7 +35,7 @@ export const TicTacToeComponent: React.FC = () => {
       }
     };
     
-    game.onPlayerLeft = (playerId) => {
+    game.onPlayerLeft = () => {
       setPlayers(game.getPlayers());
     };
     
@@ -97,7 +97,6 @@ export const TicTacToeComponent: React.FC = () => {
     try {
       const newRoomCode = await gameRef.current.createRoom(playerName.trim());
       setRoomCode(newRoomCode);
-      setIsHost(true);
       setGameMode('multiplayer');
       setPlayers(gameRef.current.getPlayers());
       setCurrentPlayerId(gameRef.current.getCurrentPlayer()?.id || '');
@@ -117,7 +116,6 @@ export const TicTacToeComponent: React.FC = () => {
     try {
       await gameRef.current.joinRoom(joinRoomCode.trim().toUpperCase(), playerName.trim());
       setRoomCode(joinRoomCode.trim().toUpperCase());
-      setIsHost(false);
       setGameMode('multiplayer');
       setPlayers(gameRef.current.getPlayers());
       setCurrentPlayerId(gameRef.current.getCurrentPlayer()?.id || '');
@@ -128,11 +126,6 @@ export const TicTacToeComponent: React.FC = () => {
     }
   }, [joinRoomCode, playerName]);
   
-  const handleStartGame = useCallback(() => {
-    if (gameRef.current && isHost) {
-      gameRef.current.sendGameAction({ type: 'start-game' });
-    }
-  }, [isHost]);
   
   const handleLeaveRoom = useCallback(() => {
     if (gameRef.current) {
@@ -143,12 +136,11 @@ export const TicTacToeComponent: React.FC = () => {
     setJoinRoomCode('');
     setPlayerName('');
     setPlayers([]);
-    setIsHost(false);
     setCurrentPlayerId('');
     setConnectionError('');
   }, []);
   
-  const handleKeyPress = useCallback((_event: KeyboardEvent) => {
+  const handleKeyPress = useCallback(() => {
     if (!gameState || gameState.gameStatus !== 'playing') return;
     
     // Allow keyboard navigation for accessibility
