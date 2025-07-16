@@ -10,7 +10,7 @@ export const Footer: React.FC = () => {
             Made with ❤️ by Buford | Open for everyone to play!
           </p>
           <div className="footer-links">
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/bufordeeds/bufords-toy-chest" target="_blank" rel="noopener noreferrer">
               GitHub
             </a>
             <span className="footer-separator">•</span>

@@ -2,20 +2,56 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Game } from '../../types/game';
 import type { LeaderboardEntry } from '../../services/leaderboardService';
+import type { GameVotes } from '../../services/votingService';
+import { useStore } from '../../store/useStore';
+import { votingService } from '../../services/votingService';
 import './GameCard.css';
 
 interface GameCardProps {
   game: Game;
   highScore?: number;
   leaderboardEntry?: LeaderboardEntry | null;
+  votes?: GameVotes;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboardEntry }) => {
+export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboardEntry, votes }) => {
+  const { updateGameVote } = useStore();
+
+  const handleVote = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!votes) return;
+    
+    if (votes.userVoted) {
+      const result = await votingService.removeVote(game.id);
+      if (result) {
+        updateGameVote(game.id, result.votes, false);
+      }
+    } else {
+      const result = await votingService.voteForGame(game.id);
+      if (result) {
+        updateGameVote(game.id, result.votes, true);
+      }
+    }
+  };
+
+  const isComingSoon = game.status === 'coming-soon';
+  const CardWrapper = isComingSoon ? 'div' : Link;
   return (
-    <Link to={`/game/${game.id}`} className="game-card">
+    <CardWrapper 
+      {...(isComingSoon ? {} : { to: `/game/${game.id}` })}
+      className={`game-card ${isComingSoon ? 'coming-soon' : ''}`}
+    >
       <div className="game-card-icon">{game.icon}</div>
       <h3 className="game-card-title">{game.name}</h3>
       <p className="game-card-description">{game.description}</p>
+      
+      {isComingSoon && (
+        <div className="coming-soon-badge">
+          <span>Coming Soon</span>
+        </div>
+      )}
       
       <div className="game-card-meta">
         <span className={`game-type ${game.type}`}>
@@ -26,17 +62,32 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
         </span>
       </div>
       
-      {highScore !== undefined && (
+      {!isComingSoon && highScore !== undefined && (
         <div className="game-card-score">
           <span>Best: {highScore.toLocaleString()}</span>
         </div>
       )}
       
-      {leaderboardEntry && (
+      {!isComingSoon && leaderboardEntry && (
         <div className="game-card-record">
           <span className="record-label">Record:</span>
           <span className="record-score">{leaderboardEntry.score.toLocaleString()}</span>
           <span className="record-holder">by {leaderboardEntry.playerName}</span>
+        </div>
+      )}
+      
+      {isComingSoon && votes && (
+        <div className="voting-section">
+          <div className="vote-count">
+            <span className="vote-number">{votes.votes}</span>
+            <span className="vote-label">votes</span>
+          </div>
+          <button 
+            className={`vote-button ${votes.userVoted ? 'voted' : ''}`}
+            onClick={handleVote}
+          >
+            {votes.userVoted ? 'Remove Vote' : 'Vote'}
+          </button>
         </div>
       )}
       
@@ -47,6 +98,6 @@ export const GameCard: React.FC<GameCardProps> = ({ game, highScore, leaderboard
           </span>
         ))}
       </div>
-    </Link>
+    </CardWrapper>
   );
 };

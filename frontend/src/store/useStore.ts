@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { GameVotes } from '../services/votingService';
 
 interface UserPreferences {
   soundEnabled: boolean;
@@ -39,8 +40,9 @@ interface AppStore {
   setIsLoading: (loading: boolean) => void;
   
   // Voting
-  hasVoted: string[];
-  addVote: (nominationId: string) => void;
+  gameVotes: GameVotes[];
+  setGameVotes: (votes: GameVotes[]) => void;
+  updateGameVote: (gameId: string, votes: number, userVoted: boolean) => void;
 }
 
 export const useStore = create<AppStore>()(
@@ -95,10 +97,13 @@ export const useStore = create<AppStore>()(
       setIsLoading: (loading) => set({ isLoading: loading }),
       
       // Voting
-      hasVoted: [],
-      addVote: (nominationId) =>
+      gameVotes: [],
+      setGameVotes: (votes) => set({ gameVotes: votes }),
+      updateGameVote: (gameId, votes, userVoted) =>
         set((state) => ({
-          hasVoted: [...state.hasVoted, nominationId],
+          gameVotes: state.gameVotes.map((v) =>
+            v.gameId === gameId ? { ...v, votes, userVoted } : v
+          ),
         })),
     }),
     {
@@ -107,7 +112,6 @@ export const useStore = create<AppStore>()(
       partialize: (state) => ({
         preferences: state.preferences,
         gameScores: state.gameScores,
-        hasVoted: state.hasVoted,
       }),
     }
   )

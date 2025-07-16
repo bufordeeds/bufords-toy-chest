@@ -8,4 +8,5 @@ export interface Game {
   maxPlayers?: number;
   difficulty: 'easy' | 'medium' | 'hard';
   tags: string[];
+  status?: 'available' | 'coming-soon';
 }

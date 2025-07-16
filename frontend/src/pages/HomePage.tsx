@@ -3,18 +3,19 @@ import { GameCard } from '../components/common/GameCard';
 import { games } from '../data/games';
 import { useStore } from '../store/useStore';
 import { leaderboardService, type LeaderboardEntry } from '../services/leaderboardService';
+import { votingService } from '../services/votingService';
 import './HomePage.css';
 
 export const HomePage: React.FC = () => {
-  const gameScores = useStore((state) => state.gameScores);
+  const { gameScores, gameVotes, setGameVotes } = useStore();
   const [leaderboardData, setLeaderboardData] = useState<Record<string, LeaderboardEntry | null>>({});
   
   useEffect(() => {
-    const fetchLeaderboardData = async () => {
+    const fetchData = async () => {
       const leaderboardEntries: Record<string, LeaderboardEntry | null> = {};
       
       for (const game of games) {
-        if (game.type === 'single') {
+        if (game.type === 'single' && game.status === 'available') {
           try {
             const leaderboard = await leaderboardService.getLeaderboard(game.id, 1);
             leaderboardEntries[game.id] = leaderboard[0] || null;
@@ -26,14 +27,21 @@ export const HomePage: React.FC = () => {
       }
       
       setLeaderboardData(leaderboardEntries);
+      
+      const votes = await votingService.getVotes();
+      setGameVotes(votes);
     };
     
-    fetchLeaderboardData();
-  }, []);
+    fetchData();
+  }, [setGameVotes]);
   
   const getHighScore = (gameId: string) => {
     const score = gameScores.find((s) => s.gameId === gameId);
     return score?.highScore;
+  };
+  
+  const getGameVotes = (gameId: string) => {
+    return gameVotes.find((v) => v.gameId === gameId);
   };
   
   const singlePlayerGames = games.filter((game) => game.type === 'single');
@@ -47,14 +55,6 @@ export const HomePage: React.FC = () => {
           <p className="hero-subtitle">
             A collection of fun games to play alone or with friends
           </p>
-          <a 
-            href="https://github.com/bufordeeds/bufords-toy-chest" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="github-link"
-          >
-            View on GitHub
-          </a>
         </section>
         
         <section className="games-section">
@@ -66,6 +66,7 @@ export const HomePage: React.FC = () => {
                 game={game}
                 highScore={getHighScore(game.id)}
                 leaderboardEntry={leaderboardData[game.id]}
+                votes={getGameVotes(game.id)}
               />
             ))}
           </div>
@@ -78,7 +79,11 @@ export const HomePage: React.FC = () => {
           </p>
           <div className="games-grid">
             {multiplayerGames.map((game) => (
-              <GameCard key={game.id} game={game} />
+              <GameCard 
+                key={game.id} 
+                game={game} 
+                votes={getGameVotes(game.id)}
+              />
             ))}
           </div>
         </section>

@@ -9,6 +9,7 @@ export const games: Game[] = [
     type: 'single',
     difficulty: 'medium',
     tags: ['puzzle', 'numbers', 'strategy'],
+    status: 'available',
   },
   {
     id: 'word-search',
@@ -18,6 +19,7 @@ export const games: Game[] = [
     type: 'single',
     difficulty: 'easy',
     tags: ['puzzle', 'words', 'casual'],
+    status: 'coming-soon',
   },
   {
     id: 'tic-tac-toe',
@@ -29,6 +31,7 @@ export const games: Game[] = [
     maxPlayers: 2,
     difficulty: 'easy',
     tags: ['classic', 'strategy', 'quick'],
+    status: 'available',
   },
   {
     id: 'connect4',
@@ -40,5 +43,6 @@ export const games: Game[] = [
     maxPlayers: 2,
     difficulty: 'easy',
     tags: ['classic', 'strategy', 'competitive'],
+    status: 'coming-soon',
   },
 ];
