@@ -56,8 +56,14 @@ export const TicTacToeComponent: React.FC = () => {
   const handleCellClick = useCallback((row: number, col: number) => {
     if (!gameRef.current || gameState?.gameStatus !== 'playing') return;
     
-    // In multiplayer mode, check if it's the current player's turn
-    if (gameMode === 'multiplayer' && players.length === 2) {
+    // In multiplayer mode, require 2 players and check turns
+    if (gameMode === 'multiplayer') {
+      // Don't allow any moves until we have 2 players
+      if (players.length < 2) {
+        return;
+      }
+      
+      // Check if it's the current player's turn
       const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
       const currentPlayerId = players[currentPlayerIndex]?.id;
       
@@ -158,12 +164,18 @@ export const TicTacToeComponent: React.FC = () => {
     const cell = gameState?.board[row][col];
     const isWinningCell = gameState?.winningLine?.includes(row * 3 + col);
     
-    // Check if it's the current player's turn in multiplayer
-    let isMyTurn = true;
-    if (gameMode === 'multiplayer' && players.length === 2 && gameState) {
-      const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
-      const currentPlayerId = players[currentPlayerIndex]?.id;
-      isMyTurn = currentPlayerId === gameRef.current?.getCurrentPlayer()?.id;
+    // Check if moves are allowed
+    let canMove = true;
+    if (gameMode === 'multiplayer') {
+      // Disable all moves if we don't have 2 players
+      if (players.length < 2) {
+        canMove = false;
+      } else if (gameState) {
+        // Check if it's the current player's turn
+        const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
+        const currentPlayerId = players[currentPlayerIndex]?.id;
+        canMove = currentPlayerId === gameRef.current?.getCurrentPlayer()?.id;
+      }
     }
     
     return (
@@ -171,9 +183,9 @@ export const TicTacToeComponent: React.FC = () => {
         key={`${row}-${col}`}
         className={`tic-tac-toe-cell ${cell ? `tic-tac-toe-cell--${cell.toLowerCase()}` : ''} ${
           isWinningCell ? 'tic-tac-toe-cell--winning' : ''
-        } ${!isMyTurn ? 'tic-tac-toe-cell--disabled' : ''}`}
+        } ${!canMove ? 'tic-tac-toe-cell--disabled' : ''}`}
         onClick={() => handleCellClick(row, col)}
-        disabled={cell !== null || gameState?.gameStatus !== 'playing' || !isMyTurn}
+        disabled={cell !== null || gameState?.gameStatus !== 'playing' || !canMove}
         aria-label={`Cell ${row + 1}, ${col + 1}${cell ? `, ${cell}` : ', empty'}`}
       >
         {cell && (
@@ -195,6 +207,11 @@ export const TicTacToeComponent: React.FC = () => {
           'Waiting to start...';
       case 'playing':
         if (gameMode === 'multiplayer') {
+          // Don't show turn info if we don't have 2 players yet
+          if (players.length < 2) {
+            return `Waiting for ${players.length}/2 players...`;
+          }
+          
           // Find the current player by matching X/O to player position
           const currentPlayerIndex = gameState.currentPlayer === 'X' ? 0 : 1;
           const currentPlayerName = players[currentPlayerIndex]?.name || `Player ${gameState.currentPlayer}`;
@@ -313,7 +330,7 @@ export const TicTacToeComponent: React.FC = () => {
             <div className="tic-tac-toe-players">
               Players: {players.map(p => p.name).join(', ')}
             </div>
-            {players.length === 1 && (
+            {players.length < 2 && (
               <div className="tic-tac-toe-waiting">
                 <div className="tic-tac-toe-spinner"></div>
                 <span>Waiting for second player...</span>
