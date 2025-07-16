@@ -31,9 +31,10 @@ export interface RankCheckResponse {
   tenthPlaceScore: number | null;
 }
 
-const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://your-backend-domain.com' 
-  : 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 
+  (import.meta.env.PROD 
+    ? 'https://toy-chest-backend.onrender.com' 
+    : 'http://localhost:3001');
 
 class LeaderboardService {
   private async fetchWithErrorHandling(url: string, options?: RequestInit): Promise<Response> {

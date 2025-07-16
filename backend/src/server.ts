@@ -12,7 +12,7 @@ const io = new Server(server, {
   cors: {
     origin: process.env.FRONTEND_URL 
       ? process.env.FRONTEND_URL.split(',') 
-      : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+      : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'https://bufords-toy-chest.vercel.app', 'https://toy-chest-backend.onrender.com'],
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',')
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'https://bufords-toy-chest.vercel.app', 'https://toy-chest-backend.onrender.com'],
   credentials: true,
 }));
 

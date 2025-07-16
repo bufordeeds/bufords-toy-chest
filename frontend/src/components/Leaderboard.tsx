@@ -75,7 +75,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`http://localhost:3001/api/leaderboard/${gameId}?limit=${limit}`);
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+          (import.meta.env.PROD 
+            ? 'https://toy-chest-backend.onrender.com' 
+            : 'http://localhost:3001');
+        const response = await fetch(`${backendUrl}/api/leaderboard/${gameId}?limit=${limit}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard: ${response.statusText}`);
