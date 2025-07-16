@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Game2048 } from './Game2048';
-import type { Direction, Game2048State } from './Game2048';
+import type { Direction, Game2048State, TileAnimation } from './Game2048';
 import { useStore } from '../../store/useStore';
 import './Game2048Component.css';
 
@@ -18,24 +18,38 @@ export const Game2048Component: React.FC = () => {
     
     // Get best score from store
     const savedScore = gameScores.find(s => s.gameId === '2048');
-    if (savedScore) {
-      setBestScore(savedScore.highScore);
-    }
+    const currentBest = savedScore?.highScore || 0;
+    setBestScore(currentBest);
     
     game.onStateChange = (state: Game2048State) => {
-      setGameState(state);
+      setGameState({ ...state });
+      
+      // Clear animations after they complete
+      if (state.animations && state.animations.some(row => row.some(anim => anim && anim.type !== 'new'))) {
+        setTimeout(() => {
+          if (gameRef.current) {
+            const currentState = gameRef.current.getState();
+            gameRef.current.setState({
+              ...currentState,
+              animations: currentState.animations.map((row: TileAnimation[]) => 
+                row.map(() => ({ type: 'new' as const }))
+              )
+            });
+          }
+        }, 250);
+      }
     };
     
     game.onScoreUpdate = (newScore: number) => {
       setScore(newScore);
-      if (newScore > bestScore) {
+      if (newScore > currentBest) {
         setBestScore(newScore);
         updateGameScore('2048', newScore);
       }
     };
     
     game.onGameEnd = (finalScore: number, won: boolean) => {
-      if (finalScore > bestScore) {
+      if (finalScore > currentBest) {
         setBestScore(finalScore);
         updateGameScore('2048', finalScore);
       }
@@ -44,12 +58,15 @@ export const Game2048Component: React.FC = () => {
     
     game.initialize();
     game.start();
-    setGameState(game.getState());
+    
+    // Set initial state
+    const initialState = game.getState();
+    setGameState({ ...initialState });
     
     return () => {
       game.end();
     };
-  }, [bestScore, updateGameScore, gameScores]);
+  }, []);
   
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!gameRef.current) return;
@@ -115,9 +132,21 @@ export const Game2048Component: React.FC = () => {
     }
   };
   
-  const getTileClass = (value: number): string => {
-    if (value === 0) return 'tile-empty';
-    return `tile-${value}`;
+  const getTileClass = (value: number, animation?: TileAnimation): string => {
+    let baseClass = value === 0 ? 'tile-empty' : `tile-${value}`;
+    
+    if (animation) {
+      switch (animation.type) {
+        case 'new':
+          baseClass += ' new-tile';
+          break;
+        case 'merged':
+          baseClass += ' merged-tile';
+          break;
+      }
+    }
+    
+    return baseClass;
   };
   
   const formatNumber = (num: number): string => {
@@ -157,15 +186,18 @@ export const Game2048Component: React.FC = () => {
       
       <div className="game-board">
         {gameState.board.map((row, rowIndex) =>
-          row.map((value, colIndex) => (
-            <div
-              key={`${rowIndex}-${colIndex}`}
-              className={`tile ${getTileClass(value)}`}
-              data-value={value || ''}
-            >
-              {value > 0 && formatNumber(value)}
-            </div>
-          ))
+          row.map((value, colIndex) => {
+            const animation = gameState.animations?.[rowIndex]?.[colIndex];
+            return (
+              <div
+                key={`${rowIndex}-${colIndex}`}
+                className={`tile ${getTileClass(value, animation)}`}
+                data-value={value || ''}
+              >
+                {value > 0 && formatNumber(value)}
+              </div>
+            );
+          })
         )}
       </div>
       

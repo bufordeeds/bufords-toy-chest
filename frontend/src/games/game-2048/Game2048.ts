@@ -2,6 +2,15 @@ import { BaseGame } from '../../types/gameFramework';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
+export interface TileAnimation {
+  type: 'new' | 'merged' | 'slide';
+  fromRow?: number;
+  fromCol?: number;
+  toRow?: number;
+  toCol?: number;
+  value?: number;
+}
+
 export interface Game2048State {
   board: number[][];
   score: number;
@@ -10,6 +19,8 @@ export interface Game2048State {
   canUndo: boolean;
   previousBoard?: number[][];
   previousScore?: number;
+  animations: TileAnimation[][];
+  lastMove?: Direction;
 }
 
 export class Game2048 extends BaseGame {
@@ -26,14 +37,18 @@ export class Game2048 extends BaseGame {
       score: 0,
       isGameOver: false,
       hasWon: false,
-      canUndo: false
+      canUndo: false,
+      animations: this.createEmptyAnimationBoard(),
     };
     
-    // Add two initial tiles
-    this.addRandomTile();
-    this.addRandomTile();
+    this.score = 0; // Reset base class score
+    
+    // Add two initial tiles with animation
+    this.addRandomTileWithAnimation();
+    this.addRandomTileWithAnimation();
     
     this.isInitialized = true;
+    
   }
   
   handleInput(input: { direction: Direction }): boolean {
@@ -42,6 +57,10 @@ export class Game2048 extends BaseGame {
     }
     
     const { direction } = input;
+    
+    // Clear previous animations
+    this.clearAnimations();
+    
     const previousBoard = this.cloneBoard(this.gameState.board);
     const previousScore = this.gameState.score;
     
@@ -68,8 +87,11 @@ export class Game2048 extends BaseGame {
       this.gameState.previousScore = previousScore;
       this.gameState.canUndo = true;
       
-      // Add new tile
-      this.addRandomTile();
+      // Add new tile with animation
+      this.addRandomTileWithAnimation();
+      
+      // Store the direction for animation reference
+      this.gameState.lastMove = direction;
       
       // Update score
       this.updateScore(this.gameState.score);
@@ -85,7 +107,8 @@ export class Game2048 extends BaseGame {
         this.end();
       }
       
-      this.onStateChange?.(this.gameState);
+      // Create a new state object for React to detect changes
+      this.onStateChange?.({ ...this.gameState, board: this.gameState.board.map((row: number[]) => [...row]) });
     }
     
     return moved;
@@ -103,7 +126,7 @@ export class Game2048 extends BaseGame {
     this.gameState.previousScore = undefined;
     
     this.updateScore(this.gameState.score);
-    this.onStateChange?.(this.gameState);
+    this.onStateChange?.({ ...this.gameState, board: this.gameState.board.map((row: number[]) => [...row]) });
     
     return true;
   }
@@ -112,6 +135,16 @@ export class Game2048 extends BaseGame {
     return Array(Game2048.BOARD_SIZE).fill(null).map(() => 
       Array(Game2048.BOARD_SIZE).fill(0)
     );
+  }
+  
+  private createEmptyAnimationBoard(): TileAnimation[][] {
+    return Array(Game2048.BOARD_SIZE).fill(null).map(() => 
+      Array(Game2048.BOARD_SIZE).fill(null).map(() => ({ type: 'new' }))
+    );
+  }
+  
+  private clearAnimations(): void {
+    this.gameState.animations = this.createEmptyAnimationBoard();
   }
   
   private cloneBoard(board: number[][]): number[][] {
@@ -132,7 +165,8 @@ export class Game2048 extends BaseGame {
     return emptyCells;
   }
   
-  private addRandomTile(): void {
+  
+  private addRandomTileWithAnimation(): void {
     const emptyCells = this.getEmptyCells();
     
     if (emptyCells.length === 0) {
@@ -143,6 +177,10 @@ export class Game2048 extends BaseGame {
     const value = Math.random() < 0.9 ? 2 : 4; // 90% chance for 2, 10% for 4
     
     this.gameState.board[randomCell.row][randomCell.col] = value;
+    this.gameState.animations[randomCell.row][randomCell.col] = {
+      type: 'new',
+      value: value
+    };
   }
   
   private moveLeft(): boolean {
@@ -150,11 +188,12 @@ export class Game2048 extends BaseGame {
     
     for (let row = 0; row < Game2048.BOARD_SIZE; row++) {
       const originalRow = [...this.gameState.board[row]];
-      const newRow = this.slideAndMergeRow(originalRow);
+      const { row: newRow, scoreGained } = this.slideAndMergeRowWithScore(originalRow);
       
       if (!this.arraysEqual(originalRow, newRow)) {
         moved = true;
         this.gameState.board[row] = newRow;
+        this.gameState.score += scoreGained;
       }
     }
     
@@ -166,12 +205,14 @@ export class Game2048 extends BaseGame {
     
     for (let row = 0; row < Game2048.BOARD_SIZE; row++) {
       const originalRow = [...this.gameState.board[row]];
-      const reversedRow = originalRow.reverse();
-      const newRow = this.slideAndMergeRow(reversedRow).reverse();
+      const reversedRow = [...originalRow].reverse();
+      const { row: newReversedRow, scoreGained } = this.slideAndMergeRowWithScore(reversedRow);
+      const newRow = [...newReversedRow].reverse();
       
-      if (!this.arraysEqual(originalRow.reverse(), newRow)) {
+      if (!this.arraysEqual(originalRow, newRow)) {
         moved = true;
         this.gameState.board[row] = newRow;
+        this.gameState.score += scoreGained;
       }
     }
     
@@ -183,11 +224,12 @@ export class Game2048 extends BaseGame {
     
     for (let col = 0; col < Game2048.BOARD_SIZE; col++) {
       const originalColumn = this.getColumn(col);
-      const newColumn = this.slideAndMergeRow(originalColumn);
+      const { row: newColumn, scoreGained } = this.slideAndMergeRowWithScore(originalColumn);
       
       if (!this.arraysEqual(originalColumn, newColumn)) {
         moved = true;
         this.setColumn(col, newColumn);
+        this.gameState.score += scoreGained;
       }
     }
     
@@ -199,24 +241,27 @@ export class Game2048 extends BaseGame {
     
     for (let col = 0; col < Game2048.BOARD_SIZE; col++) {
       const originalColumn = this.getColumn(col);
-      const reversedColumn = originalColumn.reverse();
-      const newColumn = this.slideAndMergeRow(reversedColumn).reverse();
+      const reversedColumn = [...originalColumn].reverse();
+      const { row: newReversedColumn, scoreGained } = this.slideAndMergeRowWithScore(reversedColumn);
+      const newColumn = [...newReversedColumn].reverse();
       
-      if (!this.arraysEqual(originalColumn.reverse(), newColumn)) {
+      if (!this.arraysEqual(originalColumn, newColumn)) {
         moved = true;
         this.setColumn(col, newColumn);
+        this.gameState.score += scoreGained;
       }
     }
     
     return moved;
   }
   
-  private slideAndMergeRow(row: number[]): number[] {
+  private slideAndMergeRowWithScore(row: number[]): { row: number[]; scoreGained: number } {
     // Remove zeros
     const filtered = row.filter(val => val !== 0);
     
     // Merge tiles
     const merged: number[] = [];
+    let scoreGained = 0;
     let i = 0;
     
     while (i < filtered.length) {
@@ -224,7 +269,7 @@ export class Game2048 extends BaseGame {
         // Merge tiles
         const mergedValue = filtered[i] * 2;
         merged.push(mergedValue);
-        this.gameState.score += mergedValue;
+        scoreGained += mergedValue;
         i += 2;
       } else {
         merged.push(filtered[i]);
@@ -237,7 +282,7 @@ export class Game2048 extends BaseGame {
       merged.push(0);
     }
     
-    return merged;
+    return { row: merged, scoreGained };
   }
   
   private getColumn(colIndex: number): number[] {
