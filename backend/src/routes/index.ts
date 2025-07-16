@@ -1,11 +1,13 @@
 import { Express } from 'express';
 import { votingRoutes } from './voting.js';
 import { gameRoutes } from './games.js';
+import { leaderboardRoutes } from './leaderboard.js';
 
 export function setupRoutes(app: Express): void {
   // API routes
   app.use('/api/voting', votingRoutes);
   app.use('/api/games', gameRoutes);
+  app.use('/api/leaderboard', leaderboardRoutes);
   
   // API info endpoint
   app.get('/api', (req, res) => {
@@ -15,6 +17,7 @@ export function setupRoutes(app: Express): void {
       endpoints: {
         voting: '/api/voting',
         games: '/api/games',
+        leaderboard: '/api/leaderboard',
         health: '/health'
       }
     });

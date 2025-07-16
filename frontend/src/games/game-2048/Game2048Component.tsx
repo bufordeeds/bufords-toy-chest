@@ -2,6 +2,9 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Game2048 } from './Game2048';
 import type { Direction, Game2048State, TileAnimation } from './Game2048';
 import { useStore } from '../../store/useStore';
+import { Leaderboard } from '../../components/Leaderboard';
+import { HighScoreModal } from '../../components/HighScoreModal';
+import { leaderboardService } from '../../services/leaderboardService';
 import './Game2048Component.css';
 
 export const Game2048Component: React.FC = () => {
@@ -9,6 +12,15 @@ export const Game2048Component: React.FC = () => {
   const [gameState, setGameState] = useState<Game2048State | null>(null);
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [gameOverData, setGameOverData] = useState<{ 
+    score: number; 
+    rank?: number; 
+    isHighScore: boolean; 
+    hasWon: boolean 
+  } | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const updateGameScore = useStore((state) => state.updateGameScore);
   const gameScores = useStore((state) => state.gameScores);
   
@@ -24,6 +36,18 @@ export const Game2048Component: React.FC = () => {
     game.onStateChange = (state: Game2048State) => {
       setGameState({ ...state });
       
+      // Check if we have new tiles appearing
+      const hasNewTiles = state.animations && 
+        state.animations.some(row => row.some(anim => anim && anim.type === 'new'));
+      
+      if (hasNewTiles) {
+        setIsAnimating(true);
+        // Clear animation blocking after new tile animation completes
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 300);
+      }
+      
       // Clear animations after they complete
       if (state.animations && state.animations.some(row => row.some(anim => anim && anim.type !== 'new'))) {
         setTimeout(() => {
@@ -36,11 +60,11 @@ export const Game2048Component: React.FC = () => {
               )
             });
           }
-        }, 250);
+        }, 200);
       }
     };
     
-    game.onScoreUpdate = (newScore: number) => {
+    game.onScoreUpdate = async (newScore: number) => {
       setScore(newScore);
       if (newScore > currentBest) {
         setBestScore(newScore);
@@ -48,11 +72,40 @@ export const Game2048Component: React.FC = () => {
       }
     };
     
-    game.onGameEnd = (finalScore: number, won: boolean) => {
+    game.onGameEnd = async (finalScore: number, won: boolean) => {
       if (finalScore > currentBest) {
         setBestScore(finalScore);
         updateGameScore('2048', finalScore);
       }
+      
+      // Check if this score qualifies for the leaderboard
+      try {
+        const isHighScore = await leaderboardService.isHighScore('2048', finalScore);
+        let rank;
+        
+        if (isHighScore) {
+          const rankCheck = await leaderboardService.checkRank('2048', finalScore);
+          rank = rankCheck.rank;
+        }
+        
+        setGameOverData({
+          score: finalScore,
+          rank,
+          isHighScore,
+          hasWon: won
+        });
+        setShowGameOverModal(true);
+      } catch (error) {
+        console.error('Failed to check high score status:', error);
+        // Still show modal even if leaderboard check fails
+        setGameOverData({
+          score: finalScore,
+          isHighScore: false,
+          hasWon: won
+        });
+        setShowGameOverModal(true);
+      }
+      
       console.log(won ? 'You won!' : 'Game over!');
     };
     
@@ -69,7 +122,12 @@ export const Game2048Component: React.FC = () => {
   }, []);
   
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!gameRef.current) return;
+    console.log('Key pressed:', event.key, 'isAnimating:', isAnimating, 'gameRef:', !!gameRef.current);
+    
+    if (!gameRef.current || isAnimating || showGameOverModal) {
+      console.log('Input blocked - no game ref, animating, or modal open');
+      return;
+    }
     
     let direction: Direction | null = null;
     
@@ -97,10 +155,18 @@ export const Game2048Component: React.FC = () => {
     }
     
     if (direction) {
+      console.log('Processing move:', direction);
       event.preventDefault();
-      gameRef.current.handleInput({ direction });
+      setIsAnimating(true);
+      const moved = gameRef.current.handleInput({ direction });
+      console.log('Move result:', moved);
+      
+      // If move was invalid, immediately reset animation state
+      if (!moved) {
+        setIsAnimating(false);
+      }
     }
-  }, []);
+  }, [isAnimating, showGameOverModal]);
   
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -110,16 +176,27 @@ export const Game2048Component: React.FC = () => {
   }, [handleKeyDown]);
   
   const handleSwipe = (direction: Direction) => {
-    if (gameRef.current) {
-      gameRef.current.handleInput({ direction });
+    if (gameRef.current && !isAnimating) {
+      setIsAnimating(true);
+      const moved = gameRef.current.handleInput({ direction });
+      
+      // If move was invalid, immediately reset animation state
+      if (!moved) {
+        setIsAnimating(false);
+      }
     }
   };
   
   const handleNewGame = () => {
     if (gameRef.current) {
+      setIsAnimating(false);
       gameRef.current.reset();
       gameRef.current.start();
       setScore(0);
+      
+      // Update the React state with the new board
+      const newState = gameRef.current.getState();
+      setGameState({ ...newState });
     }
   };
   
@@ -152,6 +229,40 @@ export const Game2048Component: React.FC = () => {
   const formatNumber = (num: number): string => {
     return num.toLocaleString();
   };
+
+  const handleHighScoreSubmit = async (playerName: string) => {
+    if (!gameOverData) return;
+    
+    try {
+      await leaderboardService.submitScore({
+        gameId: '2048',
+        playerName,
+        score: gameOverData.score
+      });
+      
+      // Refresh leaderboard if it's visible
+      if (showLeaderboard) {
+        // The Leaderboard component will automatically refresh
+      }
+    } catch (error) {
+      console.error('Failed to submit high score:', error);
+      throw error;
+    }
+  };
+
+  const handleGameOverModalClose = () => {
+    setShowGameOverModal(false);
+    setGameOverData(null);
+  };
+
+  const handleModalNewGame = () => {
+    handleNewGame();
+    handleGameOverModalClose();
+  };
+
+  const toggleLeaderboard = () => {
+    setShowLeaderboard(!showLeaderboard);
+  };
   
   if (!gameState) {
     return <div className="game-loading">Loading...</div>;
@@ -182,6 +293,9 @@ export const Game2048Component: React.FC = () => {
             Undo
           </button>
         )}
+        <button className="btn-secondary" onClick={toggleLeaderboard}>
+          {showLeaderboard ? 'Hide' : 'Show'} Leaderboard
+        </button>
       </div>
       
       <div className="game-board">
@@ -201,18 +315,6 @@ export const Game2048Component: React.FC = () => {
         )}
       </div>
       
-      {gameState.isGameOver && (
-        <div className="game-overlay">
-          <div className="game-overlay-content">
-            <h2>{gameState.hasWon ? 'You Win!' : 'Game Over!'}</h2>
-            <p>Final Score: {formatNumber(score)}</p>
-            {score > bestScore && <p className="new-record">New Best Score!</p>}
-            <button className="btn-primary" onClick={handleNewGame}>
-              Try Again
-            </button>
-          </div>
-        </div>
-      )}
       
       <div className="game-instructions">
         <p>Use WASD or arrow keys to move tiles. Combine tiles with the same number to reach 2048!</p>
@@ -252,6 +354,29 @@ export const Game2048Component: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showLeaderboard && (
+        <div className="game-leaderboard">
+          <Leaderboard 
+            gameId="2048" 
+            title="2048 Leaderboard"
+            limit={10}
+          />
+        </div>
+      )}
+
+      <HighScoreModal
+        isOpen={showGameOverModal}
+        onClose={handleGameOverModalClose}
+        onSubmit={handleHighScoreSubmit}
+        onNewGame={handleModalNewGame}
+        gameId="2048"
+        score={gameOverData?.score || 0}
+        rank={gameOverData?.rank}
+        isHighScore={gameOverData?.isHighScore || false}
+        hasWon={gameOverData?.hasWon || false}
+        isNewRecord={score > bestScore}
+      />
     </div>
   );
 };

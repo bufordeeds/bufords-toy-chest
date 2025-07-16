@@ -31,6 +31,14 @@ export interface GameRoom {
   lastActivity: Date;
 }
 
+export interface LeaderboardEntry {
+  id: string;
+  gameId: string;
+  playerName: string;
+  score: number;
+  achievedAt: Date;
+}
+
 export async function initDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
     db = new sqlite3.Database('./game_data.db', (err) => {
@@ -66,7 +74,16 @@ export async function initDatabase(): Promise<void> {
           gameState TEXT,
           createdAt TEXT NOT NULL,
           lastActivity TEXT NOT NULL
-        )`
+        )`,
+        `CREATE TABLE IF NOT EXISTS leaderboard (
+          id TEXT PRIMARY KEY,
+          gameId TEXT NOT NULL,
+          playerName TEXT NOT NULL,
+          score INTEGER NOT NULL,
+          achievedAt TEXT NOT NULL
+        )`,
+        `CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score 
+         ON leaderboard(gameId, score DESC)`
       ];
       
       let completed = 0;
