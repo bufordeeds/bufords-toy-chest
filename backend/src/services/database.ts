@@ -51,7 +51,7 @@ export async function initDatabase(): Promise<void> {
       
       console.log('Database connection established');
       
-      // Create tables
+      // Create tables sequentially
       const createTables = [
         `CREATE TABLE IF NOT EXISTS nominations (
           id TEXT PRIMARY KEY,
@@ -90,27 +90,30 @@ export async function initDatabase(): Promise<void> {
          ON leaderboard(gameId, score DESC)`
       ];
       
-      let completed = 0;
-      let hasError = false;
+      let currentIndex = 0;
       
-      createTables.forEach((sql, index) => {
+      const createNextTable = () => {
+        if (currentIndex >= createTables.length) {
+          console.log('All database tables created successfully');
+          resolve();
+          return;
+        }
+        
+        const sql = createTables[currentIndex];
         db.run(sql, (err) => {
-          if (err && !hasError) {
-            console.error(`Failed to create table ${index + 1}:`, err);
-            hasError = true;
+          if (err) {
+            console.error(`Failed to create table ${currentIndex + 1}:`, err);
             reject(err);
             return;
           }
           
-          completed++;
-          console.log(`Created table ${completed}/${createTables.length}`);
-          
-          if (completed === createTables.length && !hasError) {
-            console.log('All database tables created successfully');
-            resolve();
-          }
+          currentIndex++;
+          console.log(`Created table ${currentIndex}/${createTables.length}`);
+          createNextTable();
         });
-      });
+      };
+      
+      createNextTable();
     });
   });
 }
