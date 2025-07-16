@@ -1,0 +1,102 @@
+.home-page {
+  animation: fadeIn var(--transition-base) ease-out;
+}
+
+.hero-section {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+  padding: var(--spacing-2xl) 0;
+}
+
+.hero-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-bottom: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: slideIn var(--transition-base) ease-out;
+}
+
+.hero-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.games-section {
+  margin-bottom: var(--spacing-3xl);
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text-primary);
+}
+
+.section-description {
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.cta-section {
+  margin: var(--spacing-3xl) 0;
+}
+
+.cta-card {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  padding: var(--spacing-2xl);
+  border-radius: var(--radius-xl);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.cta-card h2 {
+  color: white;
+  margin-bottom: var(--spacing-md);
+}
+
+.cta-card p {
+  max-width: 600px;
+  margin: 0 auto var(--spacing-lg);
+  opacity: 0.95;
+}
+
+.cta-button {
+  display: inline-block;
+  background: white;
+  color: var(--color-primary);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-md);
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+  color: var(--color-primary-dark);
+}
+
+@media (max-width: 768px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .cta-card {
+    padding: var(--spacing-lg);
+  }
+}

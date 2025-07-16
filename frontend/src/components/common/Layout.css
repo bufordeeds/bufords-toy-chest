@@ -1,0 +1,19 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, var(--color-background) 0%, #f0f4f8 100%);
+}
+
+.layout-main {
+  flex: 1;
+  padding: var(--spacing-xl) 0;
+  position: relative;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .layout-main {
+    padding: var(--spacing-lg) 0;
+  }
+}
