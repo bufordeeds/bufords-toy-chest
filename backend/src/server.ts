@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -5,6 +6,7 @@ import cors from 'cors';
 import { setupWebSocket } from './websocket/socketHandler.js';
 import { setupRoutes } from './routes/index.js';
 import { initDatabase } from './services/database.js';
+import { initFirebase } from './services/firebase.js';
 
 const app = express();
 const server = createServer(app);
@@ -50,9 +52,14 @@ app.get('/health', (_req, res) => {
 	res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Initialize database
+// Initialize database and Firebase
 async function startServer() {
 	try {
+		// Initialize Firebase first
+		await initFirebase();
+		console.log('Firebase initialized successfully');
+		
+		// Keep SQLite for now as fallback/migration
 		await initDatabase();
 		console.log('Database initialized successfully');
 

@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { dbRun, dbAll, dbGet } from '../services/database.js';
+import { firebaseDb } from '../services/firebaseDatabase.js';
 
 const router = Router();
 
@@ -44,21 +43,17 @@ router.post('/submit', async (req: Request, res: Response) => {
       });
     }
     
-    const id = uuidv4();
     const achievedAt = new Date().toISOString();
     
-    await dbRun(
-      'INSERT INTO leaderboard (id, gameId, playerName, score, achievedAt) VALUES (?, ?, ?, ?, ?)',
-      [id, gameId, playerName, score, achievedAt]
-    );
+    const id = await firebaseDb.addLeaderboardEntry({
+      gameId,
+      playerName,
+      score,
+      achievedAt
+    });
     
     // Get the rank of this score
-    const rankResult = await dbGet(
-      'SELECT COUNT(*) as rank FROM leaderboard WHERE gameId = ? AND score > ?',
-      [gameId, score]
-    );
-    
-    const rank = (rankResult?.rank || 0) + 1;
+    const rank = await firebaseDb.getLeaderboardEntryCountAboveScore(gameId, score) + 1;
     
     return res.status(201).json({
       id,
@@ -88,12 +83,9 @@ router.get('/:gameId', async (req: Request, res: Response) => {
       });
     }
     
-    const entries = await dbAll(
-      'SELECT * FROM leaderboard WHERE gameId = ? ORDER BY score DESC LIMIT ?',
-      [gameId, limit]
-    );
+    const entries = await firebaseDb.getLeaderboardEntries(gameId, limit);
     
-    const response: LeaderboardResponse[] = entries.map((entry: any, index: number) => {
+    const response: LeaderboardResponse[] = entries.map((entry, index: number) => {
       const achievedAt = new Date(entry.achievedAt);
       const now = new Date();
       const diffMs = now.getTime() - achievedAt.getTime();
@@ -130,19 +122,12 @@ router.post('/:gameId/check-rank', async (req: Request, res: Response) => {
       });
     }
     
-    // Get the 10th place score (if it exists)
-    const tenthPlace = await dbGet(
-      'SELECT score FROM leaderboard WHERE gameId = ? ORDER BY score DESC LIMIT 1 OFFSET 9',
-      [gameId]
-    );
+    // Get top 10 scores to find the 10th place score
+    const topScores = await firebaseDb.getLeaderboardEntries(gameId, 10);
+    const tenthPlace = topScores.length >= 10 ? topScores[9] : null;
     
     // Get current rank for this score
-    const rankResult = await dbGet(
-      'SELECT COUNT(*) as rank FROM leaderboard WHERE gameId = ? AND score > ?',
-      [gameId, score]
-    );
-    
-    const rank = (rankResult?.rank || 0) + 1;
+    const rank = await firebaseDb.getLeaderboardEntryCountAboveScore(gameId, score) + 1;
     const isTopTen = rank <= 10;
     const wouldMakeTopTen = !tenthPlace || score > tenthPlace.score;
     
@@ -164,22 +149,14 @@ router.get('/:gameId/personal-best/:playerName', async (req: Request, res: Respo
   try {
     const { gameId, playerName } = req.params;
     
-    const personalBest = await dbGet(
-      'SELECT * FROM leaderboard WHERE gameId = ? AND playerName = ? ORDER BY score DESC LIMIT 1',
-      [gameId, playerName]
-    );
+    const personalBest = await firebaseDb.getPersonalBest(gameId, playerName);
     
     if (!personalBest) {
       return res.json({ personalBest: null });
     }
     
     // Get rank for personal best
-    const rankResult = await dbGet(
-      'SELECT COUNT(*) as rank FROM leaderboard WHERE gameId = ? AND score > ?',
-      [gameId, personalBest.score]
-    );
-    
-    const rank = (rankResult?.rank || 0) + 1;
+    const rank = await firebaseDb.getLeaderboardEntryCountAboveScore(gameId, personalBest.score) + 1;
     
     return res.json({
       personalBest: {
