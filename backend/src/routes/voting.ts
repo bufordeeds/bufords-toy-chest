@@ -21,7 +21,7 @@ router.get('/votes', async (req, res) => {
     `, [voterIp]);
     
     // Include games with 0 votes for coming-soon games
-    const allGames = ['word-search', 'connect4']; // These are the coming-soon games
+    const allGames = ['word-search', 'connect4', 'snake', 'memory-match', 'sudoku', 'checkers', 'minesweeper', 'tetris', 'piano-tiles', 'tanks', 'yatzy', 'cabo']; // These are the coming-soon games
     const result = allGames.map(gameId => {
       const gameVote = gameVotes.find((v: any) => v.gameId === gameId);
       return {

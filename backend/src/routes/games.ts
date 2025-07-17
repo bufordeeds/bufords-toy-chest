@@ -44,6 +44,66 @@ const availableGames: GameInfo[] = [
     status: 'coming-soon',
     minPlayers: 2,
     maxPlayers: 2
+  },
+  {
+    id: 'snake',
+    name: 'Snake',
+    description: 'Control a growing snake to eat food and avoid walls',
+    type: 'single',
+    status: 'coming-soon'
+  },
+  {
+    id: 'memory-match',
+    name: 'Memory Match',
+    description: 'Flip cards to find matching pairs',
+    type: 'single',
+    status: 'coming-soon'
+  },
+  {
+    id: 'sudoku',
+    name: 'Sudoku',
+    description: 'Fill the grid with numbers using logic',
+    type: 'single',
+    status: 'coming-soon'
+  },
+  {
+    id: 'checkers',
+    name: 'Checkers',
+    description: 'Classic board game with strategic moves',
+    type: 'multiplayer',
+    status: 'coming-soon',
+    minPlayers: 2,
+    maxPlayers: 2
+  },
+  {
+    id: 'minesweeper',
+    name: 'Minesweeper',
+    description: 'Clear the field without hitting mines',
+    type: 'single',
+    status: 'coming-soon'
+  },
+  {
+    id: 'tetris',
+    name: 'Tetris',
+    description: 'Arrange falling blocks to clear lines',
+    type: 'single',
+    status: 'coming-soon'
+  },
+  {
+    id: 'piano-tiles',
+    name: 'Piano Tiles',
+    description: 'Tap the black tiles to the rhythm',
+    type: 'single',
+    status: 'coming-soon'
+  },
+  {
+    id: 'tanks',
+    name: 'Tanks',
+    description: 'Battle with tanks in an arena',
+    type: 'multiplayer',
+    status: 'coming-soon',
+    minPlayers: 2,
+    maxPlayers: 4
   }
 ];
 
