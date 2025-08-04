@@ -2,11 +2,13 @@ import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Game2048Component } from '../games/game-2048/Game2048Component';
 import { TicTacToeComponent } from '../games/tic-tac-toe/TicTacToeComponent';
+import { SnakeComponent } from '../games/snake/SnakeComponent';
 import './GamePage.css';
 
 const AVAILABLE_GAMES = {
   '2048': Game2048Component,
   'tic-tac-toe': TicTacToeComponent,
+  'snake': SnakeComponent,
   // 'word-search': WordSearchComponent, // We'll add this later
   // 'connect4': Connect4Component, // We'll add this later
 };
