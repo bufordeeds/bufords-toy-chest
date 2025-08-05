@@ -27,7 +27,7 @@ export class Snake extends BaseGame {
   private static readonly SPEED_INCREMENT = 5; // speed up every 5 points
   private static readonly MIN_SPEED = 50; // fastest speed
   
-  private gameLoop: NodeJS.Timeout | null = null;
+  private gameLoop: ReturnType<typeof setTimeout> | null = null;
   private lastMoveTime: number = 0;
   
   constructor() {

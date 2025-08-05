@@ -57,10 +57,10 @@ export const SnakeComponent: React.FC = () => {
       
       // Check leaderboard ranking
       try {
-        const rank = await leaderboardService.checkRank('snake', finalScore);
+        const rankResponse = await leaderboardService.checkRank('snake', finalScore);
         setGameOverData({
           score: finalScore,
-          rank: rank || undefined,
+          rank: rankResponse.rank,
           isHighScore: isNewHighScore,
           hasWon: false
         });
@@ -308,7 +308,25 @@ export const SnakeComponent: React.FC = () => {
           isHighScore={gameOverData.isHighScore}
           rank={gameOverData.rank}
           gameId="snake"
+          isOpen={showGameOverModal}
           onClose={handleCloseModal}
+          onSubmit={async (playerName: string) => {
+            try {
+              await leaderboardService.submitScore({
+                gameId: 'snake',
+                playerName,
+                score: gameOverData.score
+              });
+            } catch (error) {
+              console.error('Failed to submit score:', error);
+            }
+          }}
+          onNewGame={() => {
+            handleCloseModal();
+            if (gameRef.current) {
+              gameRef.current.start();
+            }
+          }}
         />
       )}
     </div>
