@@ -92,11 +92,27 @@ export class Snake extends BaseGame {
   }
   
   handleInput(input: { direction: Direction }): boolean {
-    if (!this.isRunning || this.gameState.isGameOver || this.gameState.isPaused) {
+    if (!this.isRunning || this.gameState.isGameOver) {
       return false;
     }
     
     const { direction } = input;
+    
+    // If we're waiting for the first input, start the game
+    if (this.gameState.isWaiting) {
+      this.gameState.isWaiting = false;
+      this.gameState.direction = direction;
+      this.gameState.nextDirection = direction;
+      this.startGameLoop();
+      this.onStateChange?.(this.gameState);
+      return true;
+    }
+    
+    // If game is paused, ignore input
+    if (this.gameState.isPaused) {
+      return false;
+    }
+    
     const currentDirection = this.gameState.direction;
     
     // Prevent snake from moving back into itself
@@ -128,7 +144,7 @@ export class Snake extends BaseGame {
         this.lastMoveTime = now;
       }
       
-      if (this.isRunning && !this.gameState.isGameOver && !this.gameState.isPaused) {
+      if (this.isRunning && !this.gameState.isGameOver && !this.gameState.isPaused && !this.gameState.isWaiting) {
         this.gameLoop = setTimeout(tick, 10);
       }
     };

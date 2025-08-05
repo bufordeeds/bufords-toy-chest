@@ -122,7 +122,8 @@
 }
 
 .snake-game-over-overlay,
-.snake-pause-overlay {
+.snake-pause-overlay,
+.snake-waiting-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -134,7 +135,8 @@
 }
 
 .game-over-text,
-.pause-text {
+.pause-text,
+.waiting-text {
   font-size: 3rem;
   font-weight: bold;
   color: #fff;
@@ -142,12 +144,27 @@
   margin-bottom: 1rem;
 }
 
+.waiting-text {
+  color: #2ecc71;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71, 0 0 30px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 5px #2ecc71, 0 0 10px #2ecc71, 0 0 15px #2ecc71;
+  }
+}
+
 .final-score {
   font-size: 1.5rem;
   color: #fff;
 }
 
-.pause-hint {
+.pause-hint,
+.waiting-hint {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.8);
   margin-top: 0.5rem;
@@ -265,7 +282,8 @@
   }
   
   .game-over-text,
-  .pause-text {
+  .pause-text,
+  .waiting-text {
     font-size: 2rem;
   }
   

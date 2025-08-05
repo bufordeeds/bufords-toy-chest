@@ -114,6 +114,8 @@ export const SnakeComponent: React.FC = () => {
           break;
         case ' ':
           e.preventDefault();
+          // Don't allow pause/resume when waiting for first input
+          if (gameState.isWaiting) return;
           if (gameState.isPaused) {
             gameRef.current.resume();
           } else {
@@ -174,7 +176,7 @@ export const SnakeComponent: React.FC = () => {
   }, []);
   
   const handlePauseResume = useCallback(() => {
-    if (gameRef.current && gameState && !gameState.isGameOver) {
+    if (gameRef.current && gameState && !gameState.isGameOver && !gameState.isWaiting) {
       if (gameState.isPaused) {
         gameRef.current.resume();
       } else {
@@ -251,10 +253,18 @@ export const SnakeComponent: React.FC = () => {
             )}
             
             {/* Pause overlay */}
-            {gameState.isPaused && !gameState.isGameOver && (
+            {gameState.isPaused && !gameState.isGameOver && !gameState.isWaiting && (
               <div className="snake-pause-overlay">
                 <div className="pause-text">Paused</div>
                 <div className="pause-hint">Press Space to Resume</div>
+              </div>
+            )}
+            
+            {/* Waiting overlay */}
+            {gameState.isWaiting && (
+              <div className="snake-waiting-overlay">
+                <div className="waiting-text">Ready?</div>
+                <div className="waiting-hint">Press any arrow key to start</div>
               </div>
             )}
           </div>
@@ -269,7 +279,7 @@ export const SnakeComponent: React.FC = () => {
             <button 
               onClick={handlePauseResume}
               className="snake-button pause-button"
-              disabled={gameState.isGameOver}
+              disabled={gameState.isGameOver || gameState.isWaiting}
             >
               {gameState.isPaused ? 'Resume' : 'Pause'}
             </button>
